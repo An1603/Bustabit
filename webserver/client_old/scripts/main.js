@@ -19,7 +19,7 @@ define([
 
     //Update the balance in an ugly way TODO: Improve
     Engine.on('all', function() {
-        var elem = document.getElementById('balance_bits');
+        var elem = document.getElementById('balance_bnbs');
         if (elem)
             elem.innerHTML = Clib.formatSatoshis(Engine.balanceSatoshis, 2);
         else

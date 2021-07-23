@@ -1,18 +1,27 @@
 var assert = require('assert');
-var bc = require('./bitcoin_client');
 var db = require('./database');
 var request = require('request');
 var config = require('../config/config');
+const fetch = require('node-fetch');
 
+
+var sendToAddress = async function(withdrawalAddress, amountToSend) {
+    var hash = '';
+    //tạo địa chỉ ví
+    let response = await fetch(`http://localhost:3000/sendBnb?to=${withdrawalAddress}&amount=${amountToSend}`);
+    const json = await response.json();
+    if(json.status == 'ok'){
+        return json.hash;
+    }
+    return null;
+};
 // Doesn't validate
 module.exports = function(userId, satoshis, withdrawalAddress, withdrawalId, callback) {
-    var minWithdraw = config.MINING_FEE + 100;
     assert(typeof userId === 'number');
-    assert(satoshis >= minWithdraw);
     assert(typeof withdrawalAddress === 'string');
     assert(typeof callback === 'function');
 
-    db.makeWithdrawal(userId, satoshis, withdrawalAddress, withdrawalId, function (err, fundingId) {
+    db.makeWithdrawal(userId, satoshis, withdrawalAddress, withdrawalId, async function (err, fundingId) {
         if (err) {
             if (err.code === '23514')
                 callback('NOT_ENOUGH_MONEY');
@@ -25,20 +34,18 @@ module.exports = function(userId, satoshis, withdrawalAddress, withdrawalId, cal
 
         assert(fundingId);
 
-        var amountToSend = (satoshis - config.MINING_FEE) / 1e8;
-        bc.sendToAddress(withdrawalAddress, amountToSend, function (err, hash) {
-            if (err) {
-                if (err.message === 'Insufficient funds')
-                    return callback('PENDING');
-                return callback('FUNDING_QUEUED');
-            }
+        var amountToSend = satoshis *0.98/1000000;  //2% fee
+        let hash = await sendToAddress(withdrawalAddress, amountToSend);
+        if (!hash) {
+            if (err.message === 'Insufficient funds')
+                return callback('PENDING');
+            return callback('FUNDING_QUEUED');
+        }
+        db.setFundingsWithdrawalTxid(fundingId, hash, function (err) {
+            if (err)
+                return callback(new Error('Could not set fundingId ' + fundingId + ' to ' + hash + ': \n' + err));
 
-            db.setFundingsWithdrawalTxid(fundingId, hash, function (err) {
-                if (err)
-                    return callback(new Error('Could not set fundingId ' + fundingId + ' to ' + hash + ': \n' + err));
-
-                callback(null);
-            });
+            callback(null, hash);
         });
     });
 };

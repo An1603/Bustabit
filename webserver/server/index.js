@@ -1,7 +1,7 @@
 var fs = require('fs');
 
 var express = require('express');
-var http = require('http');
+var https = require('https');
 var assert = require('assert');
 var compression = require('compression');
 var path = require('path');
@@ -19,7 +19,7 @@ var database = require('./database');
 var Chat = require('./chat');
 var lib = require('./lib');
 
-debug('booting bustabit webserver');
+debug('booting bnbbest webserver');
 
 /** TimeAgo Settings:
  * Simplify and de-verbosify timeago output.
@@ -49,7 +49,7 @@ app.set("views", path.join(__dirname, '../views'));
 
 app.locals.recaptchaKey = config.RECAPTCHA_SITE_KEY;
 app.locals.buildConfig = config.BUILD;
-app.locals.miningFeeBits = config.MINING_FEE/100;
+app.locals.miningFeeBnbs = config.MINING_FEE/100;
 
 var dotCaching = true;
 if (!config.PRODUCTION) {
@@ -131,8 +131,7 @@ app.use(function(req, res, next) {
         user.error = req.query.err;
         user.eligible = lib.isEligibleForGiveAway(user.last_giveaway);
         user.admin = user.userclass === 'admin';
-        user.moderator = user.userclass === 'admin' ||
-                         user.userclass === 'moderator';
+        user.moderator = user.userclass === 'admin' || user.userclass === 'moderator';
         req.user = user;
         next();
     });
@@ -171,7 +170,12 @@ routes(app);
 app.use(errorHandler);
 
 /**  Server **/
-var server = http.createServer(app);
+var privateKey = fs.readFileSync( '/etc/letsencrypt/live/bnbbest.io/privkey.pem' );
+var certificate = fs.readFileSync( '/etc/letsencrypt/live/bnbbest.io/fullchain.pem' );
+var server = https.createServer({
+    key: privateKey,
+    cert: certificate
+},app);
 var io = socketIO(server); //Socket io must be after the lat app.use
 io.use(ioCookieParser);
 
@@ -213,7 +217,6 @@ io.use(function(socket, next) {
 
 
 var chatServer = new Chat(io);
-
 server.listen(config.PORT, function() {
     console.log('Listening on port ', config.PORT);
 });

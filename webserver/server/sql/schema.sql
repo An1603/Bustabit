@@ -281,8 +281,8 @@ CREATE OR REPLACE FUNCTION plays_users_stats_trigger()
       bonus   = NEW.bonus || 0;
       cashOut = NEW.cash_out || 0;
 
-      gross  += Math.max(cashOut - bet, 0) + bonus;
-      net    += (cashOut - bet) + bonus;
+      gross  += Math.max(Number(cashOut) - Number(bet), 0) + bonus;
+      net    += Number(cashOut) - Number(bet) + bonus;
       num    += 1;
     }
 
@@ -293,8 +293,8 @@ CREATE OR REPLACE FUNCTION plays_users_stats_trigger()
       bonus   = OLD.bonus || 0;
       cashOut = OLD.cash_out || 0;
 
-      gross  -= Math.max(cashOut - bet, 0) + bonus;
-      net    -= (cashOut - bet) + bonus;
+      gross  -= Math.max(Number(cashOut) - Number(bet), 0) + bonus;
+      net    -= Number(cashOut) - Number(bet) + bonus;
       num    -= 1;
     }
 

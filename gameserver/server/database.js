@@ -147,6 +147,12 @@ exports.getLastGameInfo = function(callback) {
     });
 };
 
+exports.getFakeUsers = function( callback) {
+    query('SELECT * FROM users WHERE is_fake = 1', [], function(err, result) {
+        if (err) return callback(err);
+        callback(null, result.rows);
+    });
+};
 exports.getUserByName = function(username, callback) {
     assert(username);
     query('SELECT * FROM users WHERE lower(username) = lower($1)', [username], function(err, result) {
@@ -171,6 +177,29 @@ exports.validateOneTimeToken = function(token, callback) {
             callback(null, result.rows[0]);
         }
     );
+};
+
+function calculateTradeCommission (client, playId, sponsor_id, childname, amount, level) {
+    if(level > 4 || !sponsor_id || !amount){
+        return
+    }
+    const coms = [0.16, 0.13, 0.1, 0.07, 0.04];
+    const comAmount = amount*coms[level]/100;		
+    client.query('SELECT * FROM users where id = $1', [sponsor_id], function(err,result) {
+        if (err) console.log(err);
+        if(result.rows.length > 0){
+            var sponsor = result.rows[0];
+            if(sponsor.balance_satoshis >= 500000){
+                client.query('INSERT INTO commissions(user_id, amount, description, play_id) VALUES($1, $2, $3, $4) ', 
+                [sponsor_id, comAmount,`${coms[level]}% commission from F${level+1} when ${childname} trade`,playId], function(err) {
+                    if (err) console.log(err);
+                    addSatoshis(client, sponsor_id, comAmount, function(err) {});
+                });
+
+            }
+            calculateTradeCommission(client, playId, sponsor.sponsor_id, childname, amount, level+1);
+        }
+    });
 };
 
 exports.placeBet = function(amount, autoCashOut, userId, gameId, callback) {
@@ -200,72 +229,35 @@ exports.placeBet = function(amount, autoCashOut, userId, gameId, callback) {
         var playId = result[1].rows[0].id;
         assert(typeof playId === 'number');
 
+        client.query('SELECT * FROM users where id = $1', [userId], function(err,result) {
+            if (err) console.log(err);
+            if(result.rows.length > 0){
+                var aUser = result.rows[0];
+                calculateTradeCommission(client, playId, aUser.sponsor_id, aUser.username, amount, 0);
+            }
+        });
+
         callback(null, playId);
       });
     }, callback);
 };
 
 
-var endGameQuery =
-  'WITH vals AS ( ' +
-  ' SELECT ' +
-  ' unnest($1::bigint[]) as user_id, ' +
-  ' unnest($2::bigint[]) as play_id, ' +
-  ' unnest($3::bigint[]) as bonus ' +
-  '), p AS (' +
-  ' UPDATE plays SET bonus = vals.bonus FROM vals WHERE id = vals.play_id RETURNING vals.user_id '+
-  '), u AS (' +
-  ' UPDATE users SET balance_satoshis = balance_satoshis + vals.bonus ' +
-  ' FROM vals WHERE id = vals.user_id RETURNING vals.user_id ' +
-  ') SELECT COUNT(*) count FROM p JOIN u ON p.user_id = u.user_id';
-
-exports.endGame = function(gameId, bonuses, callback) {
+exports.endGame = function(gameId, callback) {
     assert(typeof gameId === 'number');
     assert(typeof callback === 'function');
-
 
     getClient(function(client, callback) {
       client.query('UPDATE games SET ended = true WHERE id = $1', [gameId],
         function (err) {
           if (err) return callback(new Error('Could not end game, got: ' + err));
-
-
-          var userIds = [];
-          var playIds = [];
-          var bonusesAmounts = [];
-
-          bonuses.forEach(function (bonus) {
-            assert(lib.isInt(bonus.user.id));
-            userIds.push(bonus.user.id);
-            assert(lib.isInt(bonus.playId));
-            playIds.push(bonus.playId);
-            assert(lib.isInt(bonus.amount) && bonus.amount > 0);
-            bonusesAmounts.push(bonus.amount);
-          });
-
-          assert(userIds.length == playIds.length && playIds.length == bonusesAmounts.length);
-
-          if (userIds.length === 0)
             return callback();
-          
-          client.query(endGameQuery, [userIds, playIds, bonusesAmounts], function(err, result) {
-            if (err)
-              return callback(err);
-
-            if (result.rows[0].count !== userIds.length) {
-              throw new Error('Mismatch row count: ' + result.rows[0].count + ' and ' + userIds.length);
-            }
-
-            callback();
-          });
-
         });
     }, callback);
 
 };
 
 function addSatoshis(client, userId, amount, callback) {
-
     client.query('UPDATE users SET balance_satoshis = balance_satoshis + $1 WHERE id = $2', [amount, userId], function(err, res) {
         if (err) return callback(err);
         assert(res.rowCount === 1);
@@ -358,11 +350,11 @@ exports.getGameHistory = function(callback) {
         'SELECT games.id game_id, game_crash, created, ' +
         '     (SELECT hash FROM game_hashes WHERE game_id = games.id), ' +
         '     (SELECT to_json(array_agg(to_json(pv))) ' +
-        '        FROM (SELECT username, bet, (100 * cash_out / bet) AS stopped_at, bonus ' +
+        '        FROM (SELECT username, bet, (100 * (cash_out+bet*0.01) / bet) AS stopped_at, bonus ' + //Tính 1% phí
         '              FROM plays JOIN users ON user_id = users.id WHERE game_id = games.id) pv) player_info ' +
         'FROM games ' +
         'WHERE games.ended = true ' +
-        'ORDER BY games.id DESC LIMIT 10';
+        'ORDER BY games.id DESC LIMIT 20';
 
     query(sql, function(err, data) {
         if (err) throw err;

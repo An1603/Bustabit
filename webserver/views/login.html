@@ -1,53 +1,64 @@
 {{##def.page_title = 'Login' #}}
-
 {{##def.content:
-<script src='https://www.google.com/recaptcha/api.js'></script>
+
 <script>
-	var submitEnabled = false;
-  function enableSubmit() {
-	  submitEnabled = true;
-    var s = document.getElementById('loginSubmit');
-    s.style.display = 'block';
-  }
+    var submitEnabled = false;
+    function enableSubmit() {
+        $('#signinSubmit').prop("disabled", false);
+    }
 </script>
+<div class="login-page">
+    <div class="login-box">
+        <div class="card">
+            <div class="card-body login-card-body">
+                <p class="login-box-msg">Sign in to start your session</p>
 
+                <form action="/login" method="post">
+                    <div class="input-group mb-3">
+                        <input type="text" name="username" class="form-control" placeholder="Username">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-envelope"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3">
+                        <input type="password" name="password" class="form-control" required placeholder="Password">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-center mb-3">
+                        <div class="g-recaptcha" data-sitekey="{{=it.recaptchaKey}}" data-callback="enableSubmit">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="icheck-primary">
+                                <input type="checkbox" id="remember"name="remember">
+                                <label for="remember">
+                                    Remember Me
+                                </label>
+                            </div>
+                        </div>
+                        <!-- /.col -->
+                        <div class="col-4">
+                            <button type="submit" id="signinSubmit" class="btn btn-primary btn-block" disabled>Sign In</button>
+                        </div>
+                        <!-- /.col -->
+                    </div>
+                </form>
+                <p class="mb-1">
+                    <a href="/forgot-password">Forgot your password?</a>
+                </p>
+            </div>
+            <!-- /.login-card-body -->
+        </div>
+    </div>
 
-<div class="login">
-    <form action="/login" method="post" onsubmit="return submitEnabled;">
-        <div class="row">
-            <div class="large-12 columns">
-                <label>Username
-                    <input type="text" name="username" required/>
-                </label>
-            </div>
-        </div>
-         <div class="row">
-            <div class="large-12 columns">
-                <label>Password
-                    <input type="password" name="password" required />
-                </label>
-            </div>
-         </div>
-        <div class="row">
-            <div class="large-12 columns">
-                <label>
-                    Remember me
-                    <input type="checkbox" name="remember">
-                </label>
-            </div>
-        </div>
-         <div class="row">
-            <div class="g-recaptcha" data-sitekey="{{=it.recaptchaKey}}" data-callback="enableSubmit"></div>
-         </div>
-         <div class="row">
-            <div class="large-12 columns">
-                <a class="small" href="/forgot-password">Forgot your password?</a>
-                <input id="loginSubmit" style="display: none" class="border-button right blue" value="Login" type="submit" />
-            </div>
-        </div>
-
-    </form>
 </div>
-
+<!-- /.col-md-12 -->
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/authenticate')}}

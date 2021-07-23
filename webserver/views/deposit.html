@@ -1,75 +1,73 @@
 {{##def.page_title = 'Deposit History' #}}
 {{##def.content:
-<script type="text/javascript">
-    function logout() {
-        if (document.getElementById('logout') ) {
-            if (confirm("Are you sure you want to log out?")) {
-                document.getElementById("logout").submit();
-            }
-        }
-    }
-</script>
-<form action="/logout" method="post" id='logout'></form>
-    <div class="content row panel radius">
-        <div class="settings">
-            <div class="small-2 columns">
-                <ul class="menu">
-                    <li>
-                        <a href="/account">Account</a>
-                    </li>
-                    <li>
-                        <a href="/security">Security</a>
-                    </li>
-                    <li class="active">
-                        Deposit
-                    </li>
-                    <li>
-                        <a href="/withdraw">Withdraw</a>
-                    </li>
 
-                    <li>
-                        <a href="support">Support</a>
-                    </li>
-                    <li>
-                        <a onclick="logout();">
-                            Logout
-                        </a>
-                    </li>
-                </ul>
+<div class="content">
+    <div class="container-fluid">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="panel1-tab" data-toggle="tab" href="#panel1" role="tab"
+                    aria-controls="panel1" aria-selected="true">Deposit Address</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="panel2-tab" data-toggle="tab" href="#panel2" role="tab" aria-controls="panel2"
+                    aria-selected="false">Deposit History</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="panel1">
+                <div class="row">
+                    
+                    <div class="col-lg-6">
+                        <img alt="" class="show-for-medium-up qr" src="https://chart.googleapis.com/chart?chs=300x300&amp;cht=qr&amp;chl={{=it.user.deposit_address}}&amp;choe=UTF-8">
+
+                    </div>
+                    <div class="col-lg-6">
+                        <b>Deposit Address:</b><br />
+                        <div class="input-group mb-3">
+                            <input type="text" id="urlDeposit" value="{{=it.user.deposit_address}}" class="form-control" readonly>
+                            <div class="input-group-append">
+                              <span class="input-group-text btn-clipboard" data-clipboard-target="#urlDeposit">Copy</span>
+                            </div>
+                        </div>
+                        <a href="https://bscscan.com/address/{{=it.user.deposit_address}}">Binance coin link</a>
+                    </div>
+                </div>
             </div>
-            <div class="small-10 columns setts-content">
-                <h5 class="">Deposit History</h5>
-                <hr>
-                <p class="account">
-                    <b>Deposit Address:</b>
-                    <input type="text" value="{{=it.user.deposit_address}}" readonly>
-                    <a href="bitcoin:{{=it.user.deposit_address}}?message=deposit">Bitcoin link</a>
-                </p>
-                {{?it.user.deposits.length > 0}}
-                    <table>
+            <div class="tab-pane fade" id="panel2">
+                <div class="row">
+                    {{?it.user.deposits.length > 0}}
+                    <table class="table table-bordered">
                         <thead>
                             <tr>
-                                <td>Bits</td>
+                                <td>Bnbs</td>
                                 <td>Transaction</td>
                                 <td class="show-for-medium-up">Created</td>
                             </tr>
                         </thead>
                         <tbody>
                             {{~it.user.deposits :deposit:index}}
-                                <tr>
-                                    <td>{{#def.format: {n: deposit.amount, decimals: 2 } }}</td>
-                                    <td><a href="https://blockchain.info/tx/{{=deposit.txid}}" target="_blank">link</a></td>
-                                    <td class="show-for-medium-up">{{=deposit.created}}</td>
-                                </tr>
+                            <tr>
+                                <td>{{#def.format: {n: deposit.amount, decimals: 2 } }}</td>
+                                <td><a href="https://bscscan.com/tx/{{=deposit.txid}}" target="_blank">link</a></td>
+                                <td class="show-for-medium-up">{{=deposit.created}}</td>
+                            </tr>
                             {{~}}
                         </tbody>
                     </table>
-                {{??}}
+                    {{??}}
                     <p>You don't have deposits</p>
-                {{?}}
-
+                    {{?}}
+                </div>
             </div>
         </div>
     </div>
+    <!-- /.col-md-12 -->
+</div>
+<script>
+    $( document ).ready(function() {
+        setInterval(ajaxCall, 5000);
+    });
+</script>
+<!-- /.content -->
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/public')}}

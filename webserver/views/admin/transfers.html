@@ -1,0 +1,33 @@
+{{##def.page_title = 'Transfer' #}}
+{{##def.content:
+{{?it.transfers.length > 0}}
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <td>Bnbs</td>
+                <td>From User</td>
+                <td>To User</td>
+                <td class="show-for-large-up">Created</td>
+
+            </tr>
+        </thead>
+        <tbody>
+            {{~it.transfers :transfer:index}}
+                <tr>
+                    <td>{{#def.format: {n: transfer.amount, decimals: 2 } }}</td>
+                    <td>
+                        {{=transfer.from_username}}
+                    </td>
+                    <td>
+                        {{=transfer.to_username}}
+                    </td>
+                    <td class="show-for-large-up">{{=transfer.created}}</td>
+                </tr>
+            {{~}}
+        </tbody>
+    </table>
+{{??}}
+    <p>You have no transfers in your account.</p>
+{{?}}
+#}}
+{{#def.include('../template/public')}}

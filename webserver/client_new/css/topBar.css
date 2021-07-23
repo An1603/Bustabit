@@ -89,12 +89,12 @@
 
 /** User logged **/
 
-#top-bar .user-login .balance-bits {
+#top-bar .user-login .balance-bnbs {
     display: inline-block;
     padding-right: 0.5rem;
 }
 
-#top-bar .user-login .balance-bits span{
+#top-bar .user-login .balance-bnbs span{
     line-height: 2rem;
     color: black;
 }

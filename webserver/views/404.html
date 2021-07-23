@@ -1,17 +1,17 @@
-<!DOCTYPE html>
-<html>
-{{#def.include('template/head_old')}}
-<body>
-    <div class="panel rounded not-found">
-        <div class="row">
-            <div class="large-1 columns">
-                <img src="/img/logo.png" alt=""/>
-            </div>
-            <div class="large-11 columns">
-                <h2>The page you are looking for doesn't exist...</h2>
-                <a class="border-button red right" href="/">Go Home</a>
-            </div>
-        </div>
+{{##def.page_title = '404' #}}
+{{##def.content:
+<div class="content">
+  <div class="error-page">
+    <h2 class="headline text-warning"> 404</h2>
+    <div class="error-content">
+      <h3><i class="fas fa-exclamation-triangle text-warning"></i> The page you are looking for doesn't exist...</h3>
+
+      <a class="btn btn-primary" href="/">Go Home</a>
     </div>
-</body>
-</html>
+    <!-- /.error-content -->
+  </div>
+  <!-- /.col-md-12 -->
+</div>
+<!-- /.content -->
+#}}
+{{#def.include('./template/authenticate')}}

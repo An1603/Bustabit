@@ -301,7 +301,7 @@ define([
 
             if (self.username === resp.username) {
                 self.cashingOut = false;
-                self.balanceSatoshis += self.playerInfo[resp.username].bet * resp.stopped_at / 100;
+                self.balanceSatoshis += (self.playerInfo[resp.username].bet * resp.stopped_at / 100) - self.playerInfo[resp.username].bet/100;
             }
 
             self.calcBonuses();
@@ -342,14 +342,14 @@ define([
 
             requestOtt(function(err, ott) {
                 if (err) {
-                    /* If the error is 401 means the user is not logged in
-                     * Todo: This will be fixed in the near future
-                     */
                     if (err != 401) {
                         console.error('request ott error:', err);
                         if (confirm("An error, click to reload the page: " + err))
                             location.reload();
                         return;
+                    }
+                    if (err && err == 401) { 
+                        window.location.href = '/login';
                     }
                 }
 
@@ -420,7 +420,7 @@ define([
 
     /**
      * Places a bet with a giving amount.
-     * @param {number} amount - Bet amount in bits
+     * @param {number} amount - Bet amount in bnbs
      * @param {number} autoCashOut - Percentage of self cash out
      * @param {function} callback(err, result)
      */
@@ -428,9 +428,6 @@ define([
         console.assert(typeof amount == 'number');
         console.assert(Clib.isInteger(amount));
         console.assert(!autoCashOut || (typeof autoCashOut === 'number' && autoCashOut >= 100));
-
-        if(!Clib.isInteger(amount) || !((amount%100) == 0))
-            return console.error('The bet amount should be integer and divisible by 100');
 
         this.nextBetAmount = amount;
         this.nextAutoCashout = autoCashOut;
@@ -584,7 +581,7 @@ define([
             largestBet = Math.max(largestBet, bet);
         }
 
-        //The ratio bits per bit bet
+        //The ratio bnbs per bit bet
         var maxWinRatio = bonusPool / largestBet;
 
         slideSameStoppedAt(playersArrSorted,

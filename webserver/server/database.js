@@ -8,6 +8,8 @@ var pg = require('pg');
 var passwordHash = require('password-hash');
 var speakeasy = require('speakeasy');
 var m = require('multiline');
+const fetch = require('node-fetch');
+const { Sequelize } = require('sequelize');
 
 var databaseUrl = config.DATABASE_URL;
 
@@ -20,9 +22,16 @@ pg.types.setTypeParser(20, function(val) { // parse int8 as an integer
     return val === null ? null : parseInt(val);
 });
 
+var pool = new pg.Pool({
+    host: '127.0.0.1',
+    database: 'bustabitdb',
+    user: 'postgres',
+    password: 'postgres',
+  });
+
 // callback is called with (err, client, done)
 function connect(callback) {
-    return pg.connect(databaseUrl, callback);
+    return pool.connect(callback);
 }
 
 function query(query, params, callback) {
@@ -54,7 +63,7 @@ function query(query, params, callback) {
 
 exports.query = query;
 
-pg.on('error', function(err) {
+pool.on('error', function(err) {
     console.error('POSTGRES EMITTED AN ERROR', err);
 });
 
@@ -106,7 +115,7 @@ function getClient(runner, callback) {
 }
 
 //Returns a sessionId
-exports.createUser = function(username, password, email, ipAddress, userAgent, callback) {
+exports.createUser = function(username, password, email, ipAddress, userAgent, sponsor_name, callback) {
     assert(username && password);
 
     getClient(
@@ -116,28 +125,60 @@ exports.createUser = function(username, password, email, ipAddress, userAgent, c
             client.query('SELECT COUNT(*) count FROM users WHERE lower(username) = lower($1)', [username],
                 function(err, data) {
                     if (err) return callback(err);
+
                     assert(data.rows.length === 1);
                     if (data.rows[0].count > 0)
                         return callback('USERNAME_TAKEN');
-
-                    client.query('INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING id',
+                    if(sponsor_name){
+                        console.log(sponsor_name);
+                        client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [sponsor_name], function (err1, data1) {
+                            if (err1) return callback(err1);
+                            var sponsor_id = data1.rows[0];
+                            console.log(sponsor_id);
+                            client.query('INSERT INTO users(username, email, password, sponsor_id) VALUES($1, $2, $3, $4) RETURNING id',
+                                [username, email, hashedPassword,sponsor_id.id],
+                                async function(err, data) {
+                                    if (err)  {
+                                        if (err.code === '23505')
+                                            return callback('USERNAME_TAKEN');
+                                        else
+                                            return callback(err);
+                                    }
+        
+                                    assert(data.rows.length === 1);
+                                    var user = data.rows[0];
+        
+                                    createSession(client, user.id, ipAddress, userAgent, false, callback);
+                                    //tạo địa chỉ ví
+                                    let response = await fetch(`http://localhost:3000/user/generateAddress?id=${user.id}`);
+                                    const json = await response.json();
+                                }
+                            );
+                        });
+                    }else{
+                        client.query('INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING id',
                             [username, email, hashedPassword],
-                            function(err, data) {
+                            async function(err, data) {
                                 if (err)  {
                                     if (err.code === '23505')
                                         return callback('USERNAME_TAKEN');
                                     else
                                         return callback(err);
                                 }
-
+    
                                 assert(data.rows.length === 1);
                                 var user = data.rows[0];
-
+    
                                 createSession(client, user.id, ipAddress, userAgent, false, callback);
+                                //tạo địa chỉ ví
+                                let response = await fetch(`http://localhost:3000/user/generateAddress?id=${user.id}`);
+                                const json = await response.json();
                             }
                         );
 
-                    });
+                    }
+
+                });
         }
     , callback);
 };
@@ -154,6 +195,15 @@ exports.updateEmail = function(userId, email, callback) {
 
 };
 
+exports.changeUserRole = function(userId, role, callback) {
+    assert(userId && role && callback);
+    query('UPDATE users SET userclass = $1 WHERE id = $2', [role, userId], function(err, res) {
+        if (err) return callback(err);
+        assert(res.rowCount === 1);
+        callback(null);
+    });
+};
+
 exports.changeUserPassword = function(userId, password, callback) {
     assert(userId && password && callback);
     var hashedPassword = passwordHash.generate(password);
@@ -168,13 +218,17 @@ exports.updateMfa = function(userId, secret, callback) {
     assert(userId);
     query('UPDATE users SET mfa_secret = $1 WHERE id = $2', [secret, userId], callback);
 };
+exports.updateOTP = function(userId, is_otp, callback) {
+    assert(userId);
+    query('UPDATE users SET is_otp = $1 WHERE id = $2', [is_otp, userId], callback);
+};
 
 // Possible errors:
 //   NO_USER, WRONG_PASSWORD, INVALID_OTP
 exports.validateUser = function(username, password, otp, callback) {
     assert(username && password);
 
-    query('SELECT id, password, mfa_secret FROM users WHERE lower(username) = lower($1)', [username], function (err, data) {
+    query('SELECT id, password, mfa_secret,is_otp FROM users WHERE lower(username) = lower($1)', [username], function (err, data) {
         if (err) return callback(err);
 
         if (data.rows.length === 0)
@@ -186,7 +240,7 @@ exports.validateUser = function(username, password, otp, callback) {
         if (!verified)
             return callback('WRONG_PASSWORD');
 
-        if (user.mfa_secret) {
+        if (user.is_otp) {
             if (!otp) return callback('INVALID_OTP'); // really, just needs one
 
             var expected = speakeasy.totp({ key: user.mfa_secret, encoding: 'base32' });
@@ -305,7 +359,6 @@ exports.getUserBySessionId = function(sessionId, callback) {
         assert(data.length === 1);
 
         var user = data[0];
-        assert(typeof user.balance_satoshis === 'number');
 
         callback(null, user);
     });
@@ -432,7 +485,7 @@ exports.addGiveaway = function(userId, callback) {
                     return callback({ message: 'NOT_ELIGIBLE', time: eligible});
                 }
 
-                var amount = 200; // 2 bits
+                var amount = 200; // 2 bnbs
                 client.query('INSERT INTO giveaways(user_id, amount) VALUES($1, $2) ', [userId, amount], function(err) {
                     if (err) return callback(err);
 
@@ -457,7 +510,7 @@ exports.addRawGiveaway = function(userNames, amount, callback) {
             return function(callback) {
 
                 client.query('SELECT id FROM users WHERE lower(username) = lower($1)', [username], function(err, result) {
-                    if (err) return callback('unable to add bits');
+                    if (err) return callback('unable to add bnbs');
 
                     if (result.rows.length === 0) return callback(username + ' didnt exists');
 
@@ -516,6 +569,38 @@ exports.getUserNetProfitLast = function(userId, last, callback) {
         }
     );
 };
+exports.getUserStats = function(user_id, callback) {
+    var sql = m(function(){/*
+        select u.id, u.address, u.gross_profit, coalesce(u.net_profit, 0) as net_profit ,u.balance_satoshis, u.games_played, u.username, u.userclass, coalesce(pw.total_win, 0) as total_win, coalesce(pl.total_lose, 0) as total_lose, coalesce(pw.number_win, 0) as number_win, coalesce(pl.number_lose, 0) as number_lose, coalesce(fd.total_deposit, 0) as total_deposit,coalesce(fd.number_deposit, 0) as number_deposit,coalesce(fw.number_withdraw, 0) as number_withdraw, coalesce(fw.total_withdraw, 0) as total_withdraw, coalesce(c.total_commissions, 0) as total_commissions 
+        from users u
+        LEFT JOIN (
+            select count(*) as number_win, sum(p.cash_out - p.bet) as total_win, user_id from plays p WHERE p.cash_out > 0 group by p.user_id
+        ) pw on pw.user_id = u."id"
+        LEFT JOIN (
+            select count(*) as number_lose, sum(p.bet) as total_lose, user_id from plays p WHERE p.cash_out is null group by p.user_id
+        ) pl on pl.user_id = u."id"
+        LEFT JOIN (
+            select count(*) as number_deposit, sum(f.amount) as total_deposit, user_id from fundings f WHERE f.amount > 0 group by f.user_id
+        ) fd on fd.user_id = u."id"
+        LEFT JOIN (
+            select count(*) as number_withdraw, sum(f.amount) as total_withdraw, user_id from fundings f WHERE f.amount < 0 group by f.user_id
+        ) fw on fw.user_id = u."id"
+        LEFT JOIN (
+            select sum(c.amount) as total_commissions, user_id from commissions c group by c.user_id
+        ) c on c.user_id = u."id"
+        WHERE u.id = $1
+    */});
+
+    query(sql,[user_id], function(err, result) {
+            if (err) return callback(err);
+
+            if (result.rows.length !== 1)
+                return callback('USER_DOES_NOT_EXIST');
+
+            return callback(null, result.rows[0]);
+        }
+    );
+};
 
 exports.getPublicStats = function(username, callback) {
 
@@ -535,6 +620,46 @@ exports.getPublicStats = function(username, callback) {
     );
 };
 
+exports.makeTransfer = function(userId, satoshis, to_user, transferId, callback) {
+    assert(typeof userId === 'number');
+    assert(typeof satoshis === 'number');
+    // assert(satoshis > 10000);
+    assert(lib.isUUIDv4(transferId));
+
+    getClient(function(client, callback) {
+
+        client.query("SELECT id FROM users WHERE username = $1",[to_user], function(err1, response1) {
+            if (err1) return callback(err);
+            if (response1.rowCount !== 1)
+                return callback('NOT_FOUND_USER');
+            client.query("UPDATE users SET balance_satoshis = balance_satoshis - $1 WHERE id = $2",
+                [satoshis, userId], function(err, response) {
+                if (err) return callback(err);
+
+                if (response.rowCount !== 1)
+                    return callback(new Error('Unexpected transfer row count: \n' + response));
+
+                client.query("UPDATE users SET balance_satoshis = balance_satoshis + $1 WHERE id = $2",
+                    [satoshis, response1.rows[0].id], function(err, response) {
+                        if (err) return callback(err);
+                        client.query('INSERT INTO transfers(from_user_id, to_user_id, amount, transfer_id) ' +
+                            "VALUES($1, $2, $3, $4) RETURNING id",
+                            [userId, response1.rows[0].id, -1 * satoshis, transferId],
+                            function(err, response) {
+                                if (err) return callback(err);
+        
+                                var transferId = response.rows[0].id;
+                                assert(typeof transferId === 'number');
+                                callback(null, transferId);
+                            }
+                        );
+                    }
+                );
+            });
+        });
+
+    }, callback);
+};
 exports.makeWithdrawal = function(userId, satoshis, withdrawalAddress, withdrawalId, callback) {
     assert(typeof userId === 'number');
     assert(typeof satoshis === 'number');
@@ -551,8 +676,8 @@ exports.makeWithdrawal = function(userId, satoshis, withdrawalAddress, withdrawa
             if (response.rowCount !== 1)
                 return callback(new Error('Unexpected withdrawal row count: \n' + response));
 
-            client.query('INSERT INTO fundings(user_id, amount, bitcoin_withdrawal_address, withdrawal_id) ' +
-                "VALUES($1, $2, $3, $4) RETURNING id",
+            client.query('INSERT INTO fundings(user_id, amount, bitcoin_withdrawal_address, withdrawal_id, status) ' +
+                "VALUES($1, $2, $3, $4, 0) RETURNING id",
                 [userId, -1 * satoshis, withdrawalAddress, withdrawalId],
                 function(err, response) {
                     if (err) return callback(err);
@@ -568,6 +693,156 @@ exports.makeWithdrawal = function(userId, satoshis, withdrawalAddress, withdrawa
     }, callback);
 };
 
+exports.getCommissions = function(userId, callback) {
+    assert(userId && callback);
+
+    query("SELECT c.*, f.bitcoin_withdrawal_txid, p.game_id FROM commissions c "+
+        "LEFT JOIN fundings f on f.id = c.funding_id "+
+        " LEFT JOIN plays p on p.id = c.play_id WHERE c.user_id = $1 ORDER BY c.created DESC", [userId], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+               amount: Math.abs(row.amount),
+               description: row.description,
+               funding_id: row.funding_id,
+               play_id: row.play_id,
+               bitcoin_withdrawal_txid: row.bitcoin_withdrawal_txid,
+               game_id: row.game_id,
+               created: row.created
+           };
+        });
+        callback(null, data);
+    });
+};
+
+exports.getNetworks = function(userId,callback) {
+    assert(callback);
+    var sql = m(function(){/*   
+        SELECT u.*, coalesce(pw.total_win, 0) as total_win, coalesce(pl.total_lose, 0) as total_lose, coalesce(pw.number_win, 0) as number_win, coalesce(pl.number_lose, 0) as number_lose, coalesce(fd.total_deposit, 0) as total_deposit FROM  users u
+        LEFT JOIN (
+                select count(*) as number_win, sum(p.cash_out - p.bet) as total_win, user_id from plays p WHERE p.cash_out > 0 group by p.user_id
+        ) pw on pw.user_id = u."id"
+        LEFT JOIN (
+                select count(*) as number_lose, sum(p.bet) as total_lose, user_id from plays p WHERE p.cash_out is null group by p.user_id
+        ) pl on pl.user_id = u."id"
+        LEFT JOIN (
+                select count(*) as number_deposit, sum(f.amount) as total_deposit, user_id from fundings f WHERE f.amount > 0 group by f.user_id
+        ) fd on fd.user_id = u."id"
+        where sponsor_id = $1
+    */});
+    query(sql, [userId], function(err, result) {
+        if (err) return callback(err);
+        callback(null, result.rows);
+    });
+};
+
+exports.getAllTransfers = function(callback) {
+    assert(callback);
+
+    query("SELECT tr.*, t.username as to_username, f.username as from_username FROM transfers tr LEFT JOIN users f on tr.from_user_id = f.id LEFT JOIN users t on tr.to_user_id = t.id ORDER BY tr.created DESC", [], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+               amount: Math.abs(row.amount),
+               from_username: row.from_username,
+               to_username: row.to_username,
+               created: row.created
+           };
+        });
+        callback(null, data);
+    });
+};
+exports.getNewDeposits = function(userId, time, callback) {
+    assert(userId && callback);
+    query("SELECT *,date_part('epoch',f.created)::int as timestamp FROM fundings f WHERE f.amount > 0 and f.user_id = $1 and f.created > TIMESTAMP 'epoch' + $2 * INTERVAL '1 second' ORDER BY f.created DESC", [userId, time], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+               amount: Math.abs(row.amount),
+               bitcoin_deposit_txid: row.bitcoin_deposit_txid,
+               status: row.status,
+               created: row.created,
+               timestamp: row.timestamp
+           };
+        });
+        callback(null, data);
+    });
+};
+
+exports.getTransfers = function(userId, callback) {
+    assert(userId && callback);
+
+    query("SELECT tr.*, t.username as to_username, f.username as from_username FROM transfers tr LEFT JOIN users f on tr.from_user_id = f.id LEFT JOIN users t on tr.to_user_id = t.id WHERE tr.from_user_id = $1 or tr.to_user_id = $1 ORDER BY tr.created DESC", [userId], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+               amount: Math.abs(row.amount),
+               from_username: row.from_username,
+               to_username: row.to_username,
+               created: row.created
+           };
+        });
+        callback(null, data);
+    });
+};
+
+exports.getAllUsers = function(callback) {
+    assert(callback);
+
+    query("SELECT u.* FROM users u ORDER BY u.created DESC", [], function(err, result) {
+        if (err) return callback(err);
+        callback(null, result.rows);
+    });
+};
+exports.getAllCommissions = function(callback) {
+    assert(callback);
+
+    query("SELECT c.*, f.bitcoin_withdrawal_txid, p.game_id, u.username FROM commissions c "+
+    "LEFT JOIN fundings f on f.id = c.funding_id "+
+    "LEFT JOIN users u on u.id = c.user_id "+
+    " LEFT JOIN plays p on p.id = c.play_id ORDER BY c.created DESC", [], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+                amount: Math.abs(row.amount),
+                description: row.description,
+                funding_id: row.funding_id,
+                play_id: row.play_id,
+                bitcoin_withdrawal_txid: row.bitcoin_withdrawal_txid,
+                game_id: row.game_id,
+                username: row.username,
+                created: row.created
+           };
+        });
+        callback(null, data);
+    });
+};
+
+exports.getAllWithdrawals = function(callback) {
+    assert(callback);
+
+    query("SELECT f.*, u.username FROM fundings f LEFT JOIN users u on u.id = f.user_id WHERE f.amount < 0 ORDER BY f.created DESC", [], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+           return {
+               amount: Math.abs(row.amount),
+               destination: row.bitcoin_withdrawal_address,
+               bitcoin_withdrawal_txid: row.bitcoin_withdrawal_txid,
+               status: row.status,
+               created: row.created,
+               username: row.username
+           };
+        });
+        callback(null, data);
+    });
+};
+
 exports.getWithdrawals = function(userId, callback) {
     assert(userId && callback);
 
@@ -578,9 +853,28 @@ exports.getWithdrawals = function(userId, callback) {
            return {
                amount: Math.abs(row.amount),
                destination: row.bitcoin_withdrawal_address,
-               status: row.bitcoin_withdrawal_txid,
+               bitcoin_withdrawal_txid: row.bitcoin_withdrawal_txid,
+               status: row.status,
                created: row.created
            };
+        });
+        callback(null, data);
+    });
+};
+
+exports.getAllDeposits = function(callback) {
+    assert(callback);
+
+    query("SELECT f.*, u.username FROM fundings f LEFT JOIN users u on u.id = f.user_id WHERE f.amount > 0 ORDER BY f.created DESC", [], function(err, result) {
+        if (err) return callback(err);
+
+        var data = result.rows.map(function(row) {
+            return {
+                amount: row.amount,
+                txid: row.bitcoin_deposit_txid,
+                created: row.created,
+                username: row.username,
+            };
         });
         callback(null, data);
     });
@@ -625,7 +919,7 @@ exports.setFundingsWithdrawalTxid = function(fundingId, txid, callback) {
     assert(typeof txid === 'string');
     assert(callback);
 
-    query('UPDATE fundings SET bitcoin_withdrawal_txid = $1 WHERE id = $2', [txid, fundingId],
+    query('UPDATE fundings SET bitcoin_withdrawal_txid = $1, status = 1 WHERE id = $2', [txid, fundingId],
         function(err, result) {
            if (err) return callback(err);
 
@@ -736,4 +1030,143 @@ exports.getSiteStats = function(callback) {
         callback(null, data);
     });
 
+};
+
+
+const sequelize = new Sequelize( 'bustabitdb', 'postgres',  'postgres', {
+	host: 'localhost',
+	dialect: 'postgres',
+	operatorsAliases: false,
+
+	pool: {
+		max: 15,
+		min: 5,
+		acquire: 30000,
+		idle: 10000
+	}
+});
+
+const User = sequelize.define("users", {
+    id: {
+		type: Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true
+    },
+    username: {
+		type: Sequelize.STRING
+    },
+    sponsor_id: {
+		type: Sequelize.INTEGER,
+    },
+    address: {
+		type: Sequelize.STRING
+    },
+    privateKey: {
+		type: Sequelize.STRING
+    },
+    balance_satoshis: {
+		type: Sequelize.DECIMAL
+    }
+}, {
+    timestamps: false
+});
+
+const Commission = sequelize.define("commissions", {
+    id: {
+		type: Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true
+    },
+    user_id: {
+		type: Sequelize.INTEGER,
+    },
+    description: {
+		type: Sequelize.STRING
+    },
+    amount: {
+		type: Sequelize.DECIMAL
+    },
+    funding_id: {
+		type: Sequelize.INTEGER,
+    }
+}, {
+    timestamps: false
+});
+
+const Funding = sequelize.define("fundings", {
+    id: {
+		type: Sequelize.INTEGER,
+		primaryKey: true,
+		autoIncrement: true
+    },
+    user_id: {
+		type: Sequelize.INTEGER
+    },
+    bitcoin_deposit_txid: {
+		type: Sequelize.STRING,
+		primaryKey: true,
+    },
+    amount: {
+		type: Sequelize.DECIMAL
+    },
+    description: {
+		type: Sequelize.STRING
+    },
+    created: {
+		type: Sequelize.DATE,
+		allowNull: false,
+		defaultValue: Sequelize.NOW
+	}
+}, {
+    timestamps: false
+});
+
+exports.makeDeposit = async function(userId, amount, txid) {
+    if(!amount || !txid || !userId){
+        return;
+    }
+    let userTmp = await User.findByPk(userId);
+    let tmpAmount = amount/1000000000000;
+    const funding = {
+        user_id: userTmp.id,
+        bitcoin_deposit_txid: txid,
+        amount: tmpAmount,
+        created: new Date(),
+        description: 'Bnb Deposit',
+    };
+    
+    let aFund = await Funding.create(funding);
+    //cập nhật tiền vào ví user
+    userTmp.balance_satoshis = Number(userTmp.balance_satoshis) + Number(tmpAmount);
+    await userTmp.save();
+
+    //Tính hoa hồng nạp
+    const coms = [1, 0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625];
+    async function calcuCommission(sponsor_id, childname, amount, level) {
+        if(level > 6 || !sponsor_id || !amount){
+            return
+        }
+        let sponsor = await User.findByPk(sponsor_id);
+        if(!sponsor){
+            return
+        }
+        if(sponsor.balance_satoshis >= 500000){
+            let comAmount = amount*coms[level]/100;			
+            await Commission.create({
+                user_id: sponsor.id,
+                amount: comAmount,
+                description: `${coms[level]}% commission from F${level+1} when ${childname} deposit`,
+                funding_id: aFund.id
+            });
+            //Cộng vào tài khoản cho user
+            sponsor.balance_satoshis = Number(sponsor.balance_satoshis) + Number(comAmount);
+            await sponsor.save();
+        }
+
+        if(sponsor.sponsor_id){
+            calcuCommission(sponsor.sponsor_id, childname, amount, level+1);
+        }
+
+    }
+    calcuCommission(userTmp.sponsor_id, userTmp.username, tmpAmount, 0)
 };

@@ -1,0 +1,33 @@
+{{##def.page_title = 'Lịch sử commissions' #}}
+{{##def.content:
+    {{?it.commissions.length > 0}}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <td>Bnbs</td>
+                        <td>Username</td>
+                        <td>Description</td>
+                        <td class="show-for-large-up">Created</td>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {{~it.commissions :commission:index}}
+                        <tr>
+                            <td>{{#def.format: {n: commission.amount, decimals: 2 } }}</td>
+                            <td>
+                                {{=commission.username}}
+                            </td>
+                            <td>
+                                {{=commission.description}}
+                            </td>
+                            <td class="show-for-large-up">{{=commission.created}}</td>
+                        </tr>
+                    {{~}}
+                </tbody>
+            </table>
+        {{??}}
+            <p>You have no commissions in your account.</p>
+        {{?}}
+#}}
+{{#def.include('../template/public')}}

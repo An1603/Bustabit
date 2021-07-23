@@ -91,14 +91,12 @@ define([
         },
 
         render: function() {
-            if (!this.state.isConnected)
+            if (!this.state.isConnected){
                 return D.div({ id: 'loading-container' },
-                    D.div({ className: 'loading-image' },
-                        D.span({ className: 'bubble-1' }),
-                        D.span({ className: 'bubble-2' }),
-                        D.span({ className: 'bubble-3' })
+                        D.div({ className: 'loading-image' },
                     )
                 );
+            }
 
             var messageContainer;
             if(USER_MESSAGE && this.state.showMessage) {
@@ -111,15 +109,9 @@ define([
                         );
                         messageClass = 'error';
                         break;
-                    case 'newUser':
-                        messageContent = D.span(null,
-                            D.a({ href: "/request" }, "Welcome to bustabit.com, to start you have 2 free bits, bits you can request them here or you can just watch the current games... have fun :D")
-                        );
-                        messageClass = 'new-user';
-                        break;
                     case 'received':
                         messageContent = D.span(null,
-                            D.span(null, "Congratulations you have been credited " +  USER_MESSAGE.qty +  " free bits. Have fun!")
+                            D.span(null, "Congratulations you have been credited " +  USER_MESSAGE.qty +  " free bnbs. Have fun!")
                         );
                         messageClass = 'received';
                         break;
@@ -128,12 +120,6 @@ define([
                             D.span(null, USER_MESSAGE.advice)
                         );
                         messageClass = 'advice';
-                        break;
-                    case 'collect':
-                        messageContent = D.span(null,
-                            D.a({ href: '/request' }, 'Collect your two free bits!')
-                        );
-                        messageClass = 'collect';
                         break;
                     default:
                         messageContent = null;

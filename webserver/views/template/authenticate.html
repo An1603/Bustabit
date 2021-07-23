@@ -1,0 +1,203 @@
+{{##def.format:param:{{=(param.n/1).toFixed(param.decimals).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")}}#}}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{# def.page_title || 'Social Binance Coin Gambling' }} -- Bnbbest.io</title>
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="viewport"
+        content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height" />
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/2.0.1/css/ionicons.min.css" integrity="sha512-JApjWRnfonFeGBY7t4yq8SWr1A6xVYEJgO/UMIYONxaR3C9GETKUg0LharbJncEzJF5Nmiv+Pr5QNulr81LjGQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Theme style -->
+    <link rel="stylesheet" href="https://adminlte.io/themes/v3/dist/css/adminlte.min.css">
+    <!-- jQuery -->
+    <script src="https://adminlte.io/themes/v3/plugins/jquery/jquery.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="https://adminlte.io/themes/v3/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="https://adminlte.io/themes/v3/dist/js/adminlte.min.js"></script>
+    <script src='https://www.google.com/recaptcha/api.js' async defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.0/clipboard.min.js"></script>
+    <script src="https://adminlte.io/themes/dev/AdminLTE/plugins/sweetalert2/sweetalert2.min.js"></script>
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
+        var time = Math.ceil(new Date()/1000);
+        function ajaxCall() {
+            $.ajax({
+                type: 'GET',
+                url: '/check-deposit?time='+time,
+                success: function(response){
+                    if(response.status == 'ok'){
+                        for(var i=0;i < response.deposits.length; i++){
+                            var aDeposit = response.deposits[i];
+                            if (aDeposit.timestamp > time){
+                                time = aDeposit.timestamp+1;
+                            }
+                            Toast.fire({
+                                type: 'success',
+                                title: `Deposit with amount ${aDeposit.amount} received`
+                            });
+                        }
+                    }
+                }
+            });
+        }
+        $( document ).ready(function() {
+            var clipboard = new ClipboardJS('.btn-clipboard');
+            clipboard.on('success', function(e) {
+                alert("Successfully copy!");
+            });
+
+            $('#refreshBtn').click(function() {
+                var _this = $(this);
+                var existingHTML = _this.html();
+                $(_this).html('<span class="fas fa-spinner fa-spin" role="status" aria-hidden="true"></span>').prop('disabled', true);
+                ajaxCall();
+                setTimeout(function() {
+                    $(_this).html(existingHTML).prop('disabled', false);
+                }, 3000);
+            });
+        });
+
+    </script>
+    <!-- Start Alexa Certify Javascript -->
+    <script type="text/javascript">
+    _atrk_opts = { atrk_acct:"X/3Tp1ah9W20em", domain:"bnbbest.io",dynamic: true};
+    (function() { var as = document.createElement('script'); as.type = 'text/javascript'; as.async = true; as.src = "https://certify-js.alexametrics.com/atrk.js"; var s = document.getElementsByTagName('script')[0];s.parentNode.insertBefore(as, s); })();
+    </script>
+    <noscript><img src="https://certify.alexametrics.com/atrk.gif?account=X/3Tp1ah9W20em" style="display:none" height="1" width="1" alt="" /></noscript>
+    <!-- End Alexa Certify Javascript -->
+    <style>
+        .g-recaptcha iframe {
+            max-width: 100% !important;
+            transform: scale(0.8) !important;
+            -webkit-transform: scale(0.8) !important;
+            transform-origin: center center !important;
+            -webkit-transform-origin: center center !important;
+        }
+        .btn-primary, .btn-primary:hover{
+            background-color: #ff9900;
+            border-color: #ff9900;
+        }
+        .btn-primary.disabled, .btn-primary:disabled {
+            background-color: #ff9900;
+            border-color: #ff9900;
+        }
+    </style>
+</head>
+
+<body class="hold-transition layout-top-nav">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand-md navbar-light navbar-white">
+            <div class="container">
+                <a href="/" class="navbar-brand">
+                  <img src="/img/logo.png" alt="Bnbbest Logo" class="brand-image">
+                </a>
+
+                <button class="navbar-toggler order-1" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse order-3" id="navbarCollapse">
+                    <ul class="order-1 order-md-3 navbar-nav ml-auto">
+                        {{?it.user}}
+                        <li class="nav-item">
+                            <a class="nav-link">
+                                <button id="refreshBtn" class="btn m-0 p-0"><i class="fa fa-redo"></i></button>
+                            </a>
+                        </li>
+                        <li class="nav-item nav-link">
+                            <span>Bnbs: </span>
+                            <span class="balance" id="balance_bnbs">
+                                {{#def.format:{n: it.user.balance_satoshis, decimals:2} }}
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            {{?it.user.admin }}
+                            <a class="nav-link" href="/admin">{{=it.user.username}}</a>
+                            {{??}}
+                            <a class="nav-link" href="/account">{{=it.user.username}}</a>
+                            {{?}}
+                        </li>
+                        {{??}}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/register">Register</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Log in</a>
+                        </li>
+                        {{?}}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- /.navbar -->
+        {{? it.warning }}
+        <div class="alert alert-warning alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-exclamation-triangle"></i> Alert!</h5>
+            {{!it.warning}}
+        </div>
+        {{?? it.success}}
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-check"></i> Alert!</h5>
+            {{!it.success}}
+        </div>
+        {{??it.user }}
+
+        {{?it.user.error}}
+
+        <div class="alert alert-warning alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-exclamation-triangle"></i> Alert!</h5>
+            {{!it.user.error}}
+        </div>
+        {{??it.user.advice == 'new'}}
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-check"></i> Alert!</h5>
+            Welcome to bnbbest.io!
+        </div>
+        {{?? it.user.advice}}
+        <div class="alert alert-success alert-dismissible">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+            <h5><i class="icon fas fa-check"></i> Alert!</h5>
+            {{!it.user.advice}}
+        </div>
+        {{?}}
+        {{?}}
+        <div class="content-wrapper">
+            <div class="content pt-0 pb-0 pr-0 pl-0">
+                <div class="container-fluid pt-0 pb-0 pr-0 pl-0">
+                    {{#def.content || ""}}
+                </div>
+            </div>
+        </div>
+        <footer class="main-footer">
+            <!-- To the right -->
+            <div class="float-right d-none d-sm-inline">
+            </div>
+            <!-- Default to the left -->
+            <strong>Copyright © 2020-2021 <a href="https://Bnbbest.io">Bnbbest.io</a>.</strong> All rights reserved.
+        </footer>
+    </div>
+
+</body>
+
+</html>

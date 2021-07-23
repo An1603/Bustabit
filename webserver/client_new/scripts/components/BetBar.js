@@ -83,9 +83,9 @@ define([
 
     function calculatePlayingPercentages(engine) {
         /**
-         * bitsPlaying: The total amount of bits playing(not cashed) minus your qty if you are playing
-         * bitsCashedOut: The total amount of bits cashed before you if you are playing, if you are not its the total cashed out amount minus your qty
-         * bitsCashedOutAfterMe: If you are playing...
+         * bnbsPlaying: The total amount of bnbs playing(not cashed) minus your qty if you are playing
+         * bnbsCashedOut: The total amount of bnbs cashed before you if you are playing, if you are not its the total cashed out amount minus your qty
+         * bnbsCashedOutAfterMe: If you are playing...
          * myBet: guess!
          */
 
@@ -99,7 +99,7 @@ define([
             }
         }
 
-        var bitsPlaying = 0, bitsCashedOut = 0, bitsCashedOutAfterMe = 0;
+        var bnbsPlaying = 0, bnbsCashedOut = 0, bnbsCashedOutAfterMe = 0;
 
         var currentPlay = StateLib.currentPlay(engine);
 
@@ -110,21 +110,21 @@ define([
             if(username !== engine.username)
                 if(player.stopped_at) {
                     if(player.stopped_at > myStop)
-                        bitsCashedOutAfterMe += player.bet;
+                        bnbsCashedOutAfterMe += player.bet;
                     else
-                        bitsCashedOut += player.bet;
+                        bnbsCashedOut += player.bet;
 
                 } else {
-                    bitsPlaying+= player.bet;
+                    bnbsPlaying+= player.bet;
                 }
         });
 
-        var totalAmountPlaying = bitsPlaying + bitsCashedOut + bitsCashedOutAfterMe + myBet;
+        var totalAmountPlaying = bnbsPlaying + bnbsCashedOut + bnbsCashedOutAfterMe + myBet;
 
         return {
-            playingLost: bitsPlaying / totalAmountPlaying * 100,
-            cashedWon: bitsCashedOut / totalAmountPlaying * 100,
-            cashedWonAfter: bitsCashedOutAfterMe / totalAmountPlaying * 100,
+            playingLost: bnbsPlaying / totalAmountPlaying * 100,
+            cashedWon: bnbsCashedOut / totalAmountPlaying * 100,
+            cashedWonAfter: bnbsCashedOutAfterMe / totalAmountPlaying * 100,
             me: myBet / totalAmountPlaying * 100
         };
     }

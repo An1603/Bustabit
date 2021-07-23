@@ -1,11 +1,10 @@
-var admin = require('./admin');
 var assert = require('better-assert');
 var lib = require('./lib');
 var database = require('./database');
 var user = require('./user');
+var admin = require('./admin');
 var games = require('./games');
 var sendEmail = require('./sendEmail');
-var stats = require('./stats');
 var config = require('../config/config');
 var recaptchaValidator = require('recaptcha-validator');
 
@@ -13,7 +12,6 @@ var recaptchaValidator = require('recaptcha-validator');
 var production = process.env.NODE_ENV === 'production';
 
 function staticPageLogged(page, loggedGoTo) {
-
     return function(req, res) {
         var user = req.user;
         if (!user){
@@ -22,7 +20,7 @@ function staticPageLogged(page, loggedGoTo) {
         if (loggedGoTo) return res.redirect(loggedGoTo);
 
         res.render(page, {
-            user: user
+            user: user,
         });
     }
 }
@@ -104,16 +102,6 @@ function recaptchaRestrict(req, res, next) {
   });
 }
 
-
-function table() {
-    return function(req, res) {
-        res.render('table_old', {
-            user: req.user,
-            table: true
-        });
-    }
-}
-
 function tableNew() {
     return function(req, res) {
         res.render('table_new', {
@@ -124,51 +112,22 @@ function tableNew() {
     }
 }
 
-function tableDev() {
-    return function(req, res) {
-        if(config.PRODUCTION)
-            return res.status(401);
-        requestDevOtt(req.params.id, function(devOtt) {
-            res.render('table_new', {
-                user: req.user,
-                devOtt: devOtt,
-                table: true
-            });
-        });
-    }
-}
-function requestDevOtt(id, callback) {
-    var curl = require('curlrequest');
-    var options = {
-        url: 'https://www.bustabit.com/ott',
-        include: true ,
-        method: 'POST',
-        'cookie': 'id='+id
-    };
-
-    var ott=null;
-    curl.request(options, function (err, parts) {
-        parts = parts.split('\r\n');
-        var data = parts.pop()
-            , head = parts.pop();
-        ott = data.trim();
-        console.log('DEV OTT: ', ott);
-        callback(ott);
-    });
-}
 
 module.exports = function(app) {
 
     app.get('/', staticPageLogged('index'));
-    app.get('/register', staticPageLogged('register', '/play'));
+    app.get('/register', user.register);
     app.get('/login', staticPageLogged('login', '/play'));
     app.get('/reset/:recoverId', user.validateResetPassword);
     app.get('/faq', staticPageLogged('faq'));
     app.get('/contact', staticPageLogged('contact'));
-    app.get('/request', restrict, user.request);
     app.get('/deposit', restrict, user.deposit);
     app.get('/withdraw', restrict, user.withdraw);
+    app.get('/transfer', restrict, user.transfer);
+    app.get('/check-deposit', restrict, user.checkDeposit);
+    app.get('/commission', restrict, user.commission);
     app.get('/withdraw/request', restrict, user.withdrawRequest);
+    app.get('/transfer/request', restrict, user.transferRequest);
     app.get('/support', restrict, user.contact);
     app.get('/account', restrict, user.account);
     app.get('/security', restrict, user.security);
@@ -176,32 +135,30 @@ module.exports = function(app) {
     app.get('/calculator', staticPageLogged('calculator'));
     app.get('/guide', staticPageLogged('guide'));
 
-
-    app.get('/play-old', table());
     app.get('/play', tableNew());
-    app.get('/play-id/:id', tableDev());
 
     app.get('/leaderboard', games.getLeaderBoard);
     app.get('/game/:id', games.show);
     app.get('/user/:name', user.profile);
+    app.get('/network', user.network);
 
     app.get('/error', function(req, res, next) { // Sometimes we redirect people to /error
       return res.render('error');
     });
 
-    app.post('/request', restrict, recaptchaRestrict, user.giveawayRequest);
     app.post('/sent-reset', user.resetPasswordRecovery);
     app.post('/sent-recover', recaptchaRestrict, user.sendPasswordRecover);
     app.post('/reset-password', restrict, user.resetPassword);
     app.post('/edit-email', restrict, user.editEmail);
     app.post('/enable-2fa', restrict, user.enableMfa);
     app.post('/disable-2fa', restrict, user.disableMfa);
-    app.post('/withdraw-request', restrict, user.handleWithdrawRequest);
+    app.post('/withdraw/request', restrict, user.handleWithdrawRequest);
+    app.post('/transfer/request', restrict, user.handleTransferRequest);
     app.post('/support', restrict, contact('support'));
     app.post('/contact', contact('contact'));
     app.post('/logout', restrictRedirectToHome, user.logout);
     app.post('/login', recaptchaRestrict, user.login);
-    app.post('/register', recaptchaRestrict, user.register);
+    app.post('/register', recaptchaRestrict, user.handleRegister);
 
     app.post('/ott', restrict, function(req, res, next) {
         var user = req.user;
@@ -217,12 +174,22 @@ module.exports = function(app) {
             res.send(token);
         });
     });
-    app.get('/stats', stats.index);
 
 
     // Admin stuff
-    app.get('/admin-giveaway', adminRestrict, admin.giveAway);
-    app.post('/admin-giveaway', adminRestrict, admin.giveAwayHandle);
+    app.get('/admin', adminRestrict, admin.admin);
+    app.get('/admin/users', adminRestrict, admin.users);
+    app.get('/admin/users/:id', adminRestrict, admin.userDetail);
+    app.get('/admin/transfers', adminRestrict, admin.transfers);
+    app.get('/admin/deposits', adminRestrict, admin.deposits);
+    app.get('/admin/withdraws', adminRestrict, admin.withdraws);
+    app.get('/admin/commissions', adminRestrict, admin.commissions);
+
+    app.get('/admin/giveaway', adminRestrict, admin.giveAway);
+    app.post('/admin/giveaway', adminRestrict, admin.giveAwayHandle);
+    app.post('/admin/withdraws/process', adminRestrict, admin.withdrawProcessHandle);
+    app.post('/admin/users/:id/resetpassword', adminRestrict, admin.resetpasswordHandle);
+    app.post('/admin/users/:id/changerole', adminRestrict, admin.changeroleHandle);
 
     app.get('*', function(req, res) {
         res.status(404);

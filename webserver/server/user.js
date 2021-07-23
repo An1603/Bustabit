@@ -1,17 +1,20 @@
 var assert = require('better-assert');
 var async = require('async');
-var bitcoinjs = require('bitcoinjs-lib');
 var request = require('request');
 var timeago = require('timeago');
 var lib = require('./lib');
 var database = require('./database');
 var withdraw = require('./withdraw');
+var transfer = require('./transfer');
 var sendEmail = require('./sendEmail');
 var speakeasy = require('speakeasy');
 var qr = require('qr-image');
 var uuid = require('uuid');
 var _ = require('lodash');
 var config = require('../config/config');
+var Web3 = require('web3');
+const fetch = require('node-fetch');
+
 
 var sessionOptions = {
     httpOnly: true,
@@ -24,12 +27,25 @@ var sessionOptions = {
  * Register a user
  */
 exports.register  = function(req, res, next) {
+    return res.render("register", {
+        values: { 
+            sponsor: req.query['sponsor']
+        }
+    });
+};
+/**
+ * POST
+ * Public API
+ * Register a user
+ */
+exports.handleRegister  = function(req, res, next) {
     var values = _.merge(req.body, { user: {} });
     var recaptcha = lib.removeNullsAndTrim(req.body['g-recaptcha-response']);
     var username = lib.removeNullsAndTrim(values.user.name);
     var password = lib.removeNullsAndTrim(values.user.password);
     var password2 = lib.removeNullsAndTrim(values.user.confirm);
     var email = lib.removeNullsAndTrim(values.user.email);
+    var sponsor_name = lib.removeNullsAndTrim(values.user.sponsor);
     var ipAddress = req.ip;
     var userAgent = req.get('user-agent');
 
@@ -59,7 +75,7 @@ exports.register  = function(req, res, next) {
         });
     }
 
-    database.createUser(username, password, email, ipAddress, userAgent, function(err, sessionId) {
+    database.createUser(username, password, email, ipAddress, userAgent, sponsor_name, function(err, sessionId) {
         if (err) {
             if (err === 'USERNAME_TAKEN') {
                 values.user.name = null;
@@ -98,15 +114,18 @@ exports.login = function(req, res, next) {
                 return res.render('login', { warning: 'Invalid password' });
             if (err === 'INVALID_OTP') {
                 var warning = otp ? 'Invalid one-time password' : undefined;
+                console.log({ username: username, password: password, warning: warning });
                 return res.render('login-mfa', { username: username, password: password, warning: warning });
             }
             return next(new Error('Unable to validate user ' + username + ': \n' + err));
         }
         assert(userId);
-
+        console.log(userId);
         database.createSession(userId, ipAddress, userAgent, remember, function(err, sessionId, expires) {
-            if (err)
+            if (err){
+                console.log(err);
                 return next(new Error('Unable to create session for userid ' + userId +  ':\n' + err));
+            }
 
             if(remember)
                 sessionOptions.expires = expires;
@@ -132,6 +151,28 @@ exports.logout = function(req, res, next) {
         if (err)
             return next(new Error('Unable to logout got error: \n' + err));
         res.redirect('/');
+    });
+};
+
+/**
+ * POST
+ * Logged API
+ * Logout the current user
+ */
+ exports.network = function(req, res, next) {
+    var user = req.user;
+    var sessionId = req.cookies.id;
+    var userId = req.user.id;
+    var sponsor_id = req.query.sponsor_id;
+    if(sponsor_id != undefined){
+        userId = sponsor_id;
+    }
+
+    database.getNetworks(userId, function(err, users) {
+        if (err) return next(new Error('Unable to got networks: \n' + err));
+        
+        user.users = users;
+        res.render('network', { user:  user });
     });
 };
 
@@ -204,10 +245,6 @@ exports.profile = function(req, res, next) {
             var netProfitOffset = stats.net_profit - lastProfit;
             var plays = results[1];
 
-
-            if (!lib.isInt(netProfitOffset))
-                return next(new Error('Internal profit calc error: ' + username + ' does not have an integer net profit offset'));
-
             assert(plays);
 
             plays.forEach(function(play) {
@@ -250,82 +287,33 @@ exports.profile = function(req, res, next) {
     });
 };
 
-/**
- * GET
- * Shows the request bits page
- * Restricted API to logged users
- **/
-exports.request = function(req, res) {
-    var user = req.user; //Login var
-    assert(user);
-
-    res.render('request', { user: user });
-};
-
-/**
- * POST
- * Process the give away requests
- * Restricted API to logged users
- **/
-exports.giveawayRequest = function(req, res, next) {
-    var user = req.user;
-    assert(user);
-
-    database.addGiveaway(user.id, function(err) {
-        if (err) {
-            if (err.message === 'NOT_ELIGIBLE') {
-                return res.render('request', { user: user, warning: 'You have to wait ' + err.time + ' minutes for your next give away.' });
-            } else if(err === 'USER_DOES_NOT_EXIST') {
-                return res.render('error', { error: 'User does not exist.' });
-            }
-
-            return next(new Error('Unable to add giveaway: \n' + err));
-        }
-        user.eligible = 240;
-        user.balance_satoshis += 200;
-        return res.redirect('/play?m=received');
-    });
-
-};
 
 /**
  * GET
  * Restricted API
  * Shows the account page, the default account page.
  **/
-exports.account = function(req, res, next) {
+exports.account = async function(req, res, next) {
     var user = req.user;
     assert(user);
 
-    var tasks = [
-        function(callback) {
-            database.getDepositsAmount(user.id, callback);
-        },
-        function(callback) {
-            database.getWithdrawalsAmount(user.id, callback);
-        },
-        function(callback) {
-            database.getGiveAwaysAmount(user.id, callback);
-        },
-        function(callback) {
-            database.getUserNetProfit(user.id, callback)
+    if(user.address == null){
+        let response = await fetch(`http://localhost:3000/user/generateAddress?id=${user.id}`);
+        const json = await response.json();
+        if(json.status == 'ok'){
+            user.address = json.user.address;
         }
-    ];
-
-    async.parallel(tasks, function(err, ret) {
+    }
+    database.getUserStats(user.id, function(err, ret) {
         if (err)
             return next(new Error('Unable to get account info: \n' + err));
 
-        var deposits = ret[0];
-        var withdrawals = ret[1];
-        var giveaways = ret[2];
-        var net = ret[3];
-        user.deposits = !deposits.sum ? 0 : deposits.sum;
-        user.withdrawals = !withdrawals.sum ? 0 : withdrawals.sum;
-        user.giveaways = !giveaways.sum ? 0 : giveaways.sum;
-        user.net_profit = net.profit;
-        user.deposit_address = lib.deriveAddress(user.id);
-
+        user.total_commissions = ret.total_commissions;
+        user.total_deposit = ret.total_deposit;
+        user.total_withdraw = ret.total_withdraw;
+        user.net_profit = user.net_profit;
+        user.deposit_address = user.address;
+        console.log(user);
         res.render('account', { user: user });
     });
 };
@@ -431,10 +419,10 @@ exports.security = function(req, res) {
     assert(user);
 
     if (!user.mfa_secret) {
-        user.mfa_potential_secret = speakeasy.generate_key({ length: 32 }).base32;
-        var qrUri = 'otpauth://totp/bustabit:' + user.username + '?secret=' + user.mfa_potential_secret + '&issuer=bustabit';
-        user.qr_svg = qr.imageSync(qrUri, { type: 'svg' });
-        user.sig = lib.sign(user.username + '|' + user.mfa_potential_secret);
+        var mfa_secret = speakeasy.generate_key({ length: 32 }).base32;
+        user.mfa_secret = mfa_secret;
+
+        database.updateMfa(user.id, mfa_secret, function(err) {});
     }
 
     res.render('security', { user: user });
@@ -450,31 +438,19 @@ exports.enableMfa = function(req, res, next) {
     assert(user);
 
     var otp = lib.removeNullsAndTrim(req.body.otp);
-    var sig = lib.removeNullsAndTrim(req.body.sig);
-    var secret = lib.removeNullsAndTrim(req.body.mfa_potential_secret);
 
-    if (user.mfa_secret) return res.redirect('/security?err=2FA%20is%20already%20enabled');
+    if (user.is_otp) return res.redirect('/security?err=2FA%20is%20already%20enabled');
     if (!otp) return next('Missing otp in enabling mfa');
-    if (!sig) return next('Missing sig in enabling mfa');
-    if (!secret) return next('Missing secret in enabling mfa');
 
-    if (!lib.validateSignature(user.username + '|' + secret, sig))
-        return next('Could not validate sig');
-
-    var expected = speakeasy.totp({ key: secret, encoding: 'base32' });
+    var expected = speakeasy.totp({ key: user.mfa_secret, encoding: 'base32' });
 
     if (otp !== expected) {
-        user.mfa_potential_secret = secret;
-        var qrUri = 'otpauth://totp/bustabit:' + user.username + '?secret=' + secret + '&issuer=bustabit';
-        user.qr_svg = qr.imageSync(qrUri, {type: 'svg'});
-        user.sig = sig;
-
         return res.render('security', { user: user, warning: 'Invalid 2FA token' });
     }
 
-    database.updateMfa(user.id, secret, function(err) {
+    database.updateOTP(user.id, 1, function(err) {
         if (err) return next(new Error('Unable to update 2FA status: \n' + err));
-        res.redirect('/security?=m=Two-Factor%20Authentication%20Enabled');
+        res.redirect('/security?m=Two-Factor%20Authentication%20Enabled');
     });
 };
 
@@ -487,10 +463,9 @@ exports.disableMfa = function(req, res, next) {
     var user = req.user;
     assert(user);
 
-    var secret = lib.removeNullsAndTrim(user.mfa_secret);
+    var secret = user.mfa_secret;
     var otp = lib.removeNullsAndTrim(req.body.otp);
 
-    if (!secret) return res.redirect('/security?err=Did%20not%20sent%20mfa%20secret');
     if (!user.mfa_secret) return res.redirect('/security?err=2FA%20is%20not%20enabled');
     if (!otp) return res.redirect('/security?err=No%20OTP');
 
@@ -499,10 +474,9 @@ exports.disableMfa = function(req, res, next) {
     if (otp !== expected)
         return res.redirect('/security?err=invalid%20one-time%20password');
 
-    database.updateMfa(user.id, null, function(err) {
-        if (err) return next(new Error('Error updating Mfa: \n' + err));
-
-        res.redirect('/security?=m=Two-Factor%20Authentication%20Disabled');
+    database.updateOTP(user.id, 0, function(err) {
+        if (err) return next(new Error('Unable to update 2FA status: \n' + err));
+        res.redirect('/security?m=Two-Factor%20Authentication%20Disabled');
     });
 };
 
@@ -611,20 +585,116 @@ exports.resetPasswordRecovery = function(req, res, next) {
  * Restricted API
  * Shows the deposit history
  **/
-exports.deposit = function(req, res, next) {
+exports.deposit = async function(req, res, next) {
     var user = req.user;
     assert(user);
+    console.log(user);
+    if(user.address == null){
+        let response = await fetch(`http://localhost:3000/user/generateAddress?id=${user.id}`);
+        const json = await response.json();
+        if(json.status == 'ok'){
+            user.address = json.user.address;
+        }
+    }
 
     database.getDeposits(user.id, function(err, deposits) {
         if (err) {
             return next(new Error('Unable to get deposits: \n' + err));
         }
         user.deposits = deposits;
-        user.deposit_address = lib.deriveAddress(user.id);
+        user.deposit_address = user.address;
         res.render('deposit', { user:  user });
     });
 };
 
+/**
+ * GET
+ * Restricted API
+ * Shows the commission history
+ **/
+ exports.commission = function(req, res, next) {
+    var user = req.user;
+    assert(user);
+
+    database.getCommissions(user.id, function(err, commissions) {
+        if (err)
+            return next(new Error('Unable to get commissions: \n' + err));
+
+        user.commissions = commissions;
+
+        res.render('commission', { user: user });
+    });
+};
+
+
+
+
+/**
+ * GET
+ * Restricted API
+ * Shows the withdrawal history
+ **/
+exports.checkDeposit = async function(req, res, next) {
+    var user = req.user;
+    assert(user);
+    let retDeposits = [];
+    database.getDeposits(1, async function(err, deposits) {
+        if (err)
+            res.send({ status: 'ko' });
+        
+        let response = await fetch(`https://api.bscscan.com/api?module=account&action=txlist&address=${user.address}&startblock=1&endblock=99999999&sort=desc&page=1&offset=20&apikey=NUK56EKJ4MJDZ3AV3K934UDS425YA52FIY`);
+        const json = await response.json();
+        if(json.status == 1 && json.result.length > 0){
+            for(var i = 0;i < json.result.length; i++){
+                var aRet = json.result[i];
+                
+                if(aRet && user.address && user.address.toUpperCase() == aRet.to.toUpperCase()){
+                    let isFound = false;
+                    for(var j = 0;j < deposits.length; j++){
+                        if(deposits[j].txid.toUpperCase() == aRet.hash.toUpperCase()){
+                            isFound = true;
+                            break;
+                        }
+                    }
+                    if(!isFound){
+                        retDeposits.push({amount: (aRet.value/1000000000000000000), timestamp: aRet.timeStamp, hash: aRet.hash});
+                        await database.makeDeposit(user.id,aRet.value,aRet.hash);
+                        
+                        //gửi email thông báo 
+                        if(user.email != null){
+                            try {
+                                sendEmail.emailDepositReceive(user.email,aRet.hash, aRet.value/1000000000000 , function(err) {
+                                    
+                                });
+                            } catch (error) {
+                                console.log(error);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        res.send({ status: 'ok', deposits: retDeposits, time: req.query.time });
+    });
+
+};
+/**
+ * GET
+ * Restricted API
+ * Shows the withdrawal history
+ **/
+exports.transfer = function(req, res, next) {
+    var user = req.user;
+    assert(user);
+
+    database.getTransfers(user.id, function(err, transfers) {
+        if (err)
+            return next(new Error('Unable to get transfers: \n' + err));
+        user.transfers = transfers;
+
+        res.render('transfer', { user: user });
+    });
+};
 /**
  * GET
  * Restricted API
@@ -650,6 +720,63 @@ exports.withdraw = function(req, res, next) {
 /**
  * POST
  * Restricted API
+ * Process a transfer
+ **/
+ exports.handleTransferRequest = function(req, res, next) {
+    var user = req.user;
+    assert(user);
+
+    var amount = req.body.amount;
+    var to_user = req.body.to_user;
+    var transferId = req.body.transfer_id;
+    var password = lib.removeNullsAndTrim(req.body.password);
+    var otp = lib.removeNullsAndTrim(req.body.otp);
+
+    var r =  /^[1-9]\d*(\.\d{0,2})?$/;
+    if (!r.test(amount))
+        return res.render('transfer-request', { user: user, id: uuid.v4(),  warning: 'Not a valid amount' });
+
+    amount = Math.round(parseFloat(amount));
+
+    if (typeof to_user !== 'string')
+        return res.render('transfer-request', { user: user,  id: uuid.v4(), warning: 'User not provided' });
+
+    if (amount > user.balance_satoshis)
+        return res.render('transfer-request', { user: user,  id: uuid.v4(), warning: 'Balance not enough' });
+
+    if (!password)
+        return res.render('transfer-request', { user: user,  id: uuid.v4(), warning: 'Must enter a password' });
+
+    if(!lib.isUUIDv4(transferId))
+      return res.render('transfer-request', { user: user,  id: uuid.v4(), warning: 'Could not find a one-time token' });
+
+    database.validateUser(user.username, password, otp, function(err) {
+
+        if (err) {
+            if (err === 'WRONG_PASSWORD')
+                return res.render('transfer-request', { user: user, id: uuid.v4(), warning: 'wrong password, try it again...' });
+            if (err === 'INVALID_OTP')
+                return res.render('transfer-request', { user: user, id: uuid.v4(), warning: 'invalid one-time token' });
+            //Should be an user
+            return next(new Error('Unable to validate user handling transfer: \n' + err));
+        }
+
+        transfer(req.user.id, amount, to_user, transferId, function(err) {
+            if (err) {
+                if (err === 'NOT_FOUND_USER')
+                    return res.render('transfer-request', { user: user, id: uuid.v4(), warning: 'Receiver user not found!.' });
+                else if(err === 'TRANFERED')
+                    return res.render('transfer-request', { user: user,  id: uuid.v4(), success: 'Successful transfer!.' });
+                else
+                    return next(new Error('Unable to transfer: ' + err));
+            }
+            return res.render('transfer-request', { user: user, id: uuid.v4(), success: 'OK' });
+        });
+    });
+};
+/**
+ * POST
+ * Restricted API
  * Process a withdrawal
  **/
 exports.handleWithdrawRequest = function(req, res, next) {
@@ -666,10 +793,10 @@ exports.handleWithdrawRequest = function(req, res, next) {
     if (!r.test(amount))
         return res.render('withdraw-request', { user: user, id: uuid.v4(),  warning: 'Not a valid amount' });
 
-    amount = Math.round(parseFloat(amount) * 100);
+    amount = Math.round(parseFloat(amount));
     assert(Number.isFinite(amount));
 
-    var minWithdraw = config.MINING_FEE + 10000;
+    var minWithdraw = 25000; //10$
 
     if (amount < minWithdraw)
         return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'You must withdraw ' + minWithdraw + ' or more'  });
@@ -677,13 +804,8 @@ exports.handleWithdrawRequest = function(req, res, next) {
     if (typeof destination !== 'string')
         return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'Destination address not provided' });
 
-    try {
-        var version = bitcoinjs.Address.fromBase58Check(destination).version;
-        if (version !== bitcoinjs.networks.bitcoin.pubKeyHash && version !== bitcoinjs.networks.bitcoin.scriptHash)
-            return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'Destination address is not a bitcoin one' });
-    } catch(ex) {
-        return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'Not a valid destination address' });
-    }
+    if (!Web3.utils.isAddress(destination))
+        return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'Destination is not valid' });
 
     if (!password)
         return res.render('withdraw-request', { user: user,  id: uuid.v4(), warning: 'Must enter a password' });
@@ -702,8 +824,9 @@ exports.handleWithdrawRequest = function(req, res, next) {
             return next(new Error('Unable to validate user handling withdrawal: \n' + err));
         }
 
-        withdraw(req.user.id, amount, destination, withdrawalId, function(err) {
+        withdraw(req.user.id, amount, destination, withdrawalId, function(err,hashRes) {
             if (err) {
+                consolog.log(`${new Date()} ERR: ${err}`);
                 if (err === 'NOT_ENOUGH_MONEY')
                     return res.render('withdraw-request', { user: user, id: uuid.v4(), warning: 'Not enough money to process withdraw.' });
                 else if (err === 'PENDING')
@@ -714,6 +837,14 @@ exports.handleWithdrawRequest = function(req, res, next) {
                     return res.render('withdraw-request', { user: user,  id: uuid.v4(), success: 'Your transaction is being processed come back later to see the status.' });
                 else
                     return next(new Error('Unable to withdraw: ' + err));
+            }
+            if(user.email != null){
+                try {
+                    sendEmail.withdraw(user.email, hashRes, amount, function(err) {
+                    });
+                } catch (error) {
+                    console.log(error);
+                }
             }
             return res.render('withdraw-request', { user: user, id: uuid.v4(), success: 'OK' });
         });
@@ -728,6 +859,15 @@ exports.handleWithdrawRequest = function(req, res, next) {
 exports.withdrawRequest = function(req, res) {
     assert(req.user);
     res.render('withdraw-request', { user: req.user, id: uuid.v4() });
+};
+/**
+ * GET
+ * Restricted API
+ * Shows the transfer request page
+ **/
+exports.transferRequest = function(req, res) {
+    assert(req.user);
+    res.render('transfer-request', { user: req.user, id: uuid.v4() });
 };
 
 /**

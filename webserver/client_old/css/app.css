@@ -43,11 +43,6 @@ table {
     width: 100% !important;
 }
 
-.content {
-    margin-top: 50px;
-    padding-left: 10px;
-}
-
 .data {
     padding-top: 15px;
     padding-right: 10px;
@@ -273,13 +268,7 @@ nav .top-bar-title {
 }
 
 .settings .menu {
-    width: 66px;
     margin-left: 0;
-}
-
-/* Account */
-.account {
-    margin-top: 30px;
 }
 
 #statistics {
@@ -287,7 +276,7 @@ nav .top-bar-title {
     margin-left: 0px;
     text-align: center;
 }
-.bits{
+.bnbs{
     margin: 0px;
 }
 
@@ -382,3 +371,10 @@ nav .top-bar-title {
 @media only screen and (min-width: 90.063em) and (max-width: 120em) { } /* min-width 1441px and max-width 1920px, use when QAing xlarge screen-only issues */
 
 @media only screen and (min-width: 120.063em) { } /* min-width 1921px, xxlarge screens */
+
+form{
+    margin: 0px !important;
+}
+.panel{
+    border: 0px !important;
+}

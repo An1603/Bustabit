@@ -23,7 +23,7 @@ define([
 
     function getState(){
         return {
-            betSize: ControlsStore.getBetSize(), //Bet input string in bits
+            betSize: ControlsStore.getBetSize(), //Bet input string in bnbs
             betInvalid: ControlsStore.getBetInvalid(), //false || string error message
             cashOut: ControlsStore.getCashOut(),
             cashOutInvalid: ControlsStore.getCashOutInvalid(), //false || string error message
@@ -137,7 +137,45 @@ define([
                             self._setBetSize(e.target.value);
                         }
                     }),
-                    D.span({ className: '' }, 'bits')
+                    D.span({ className: '' }, 'bnbs')
+                )
+            );
+            var betInputs = D.div({ id: 'better-inputs' , key: 'ci-3' },
+                D.ul({ id: 'betterButtons' + (this.state.betInvalid? ' error' : '') },
+                    D.li({},
+                        D.a({ className: 'better-inputs b1',
+                        onClick: function (e) {
+                            var val = document.getElementsByName('bet-size')[0].value;
+                            if(val/2 < 1){
+                                self._setBetSize(`${1}`);
+                            }else{
+                                self._setBetSize(`${Math.floor(val/2)}`);
+                            }
+                        }}, '1/2'),
+                    ),
+                    D.li({},
+                        D.a({ className: 'better-inputs b2',
+                        onClick: function (e) {
+                            var val = document.getElementsByName('bet-size')[0].value;
+                            if(val*2 > Engine.balanceSatoshis){
+                                self._setBetSize(`${val}`);
+                            }else{
+                                self._setBetSize(`${val*2}`);
+                            }
+                        }}, 'x2'),
+                    ),
+                    D.li({},
+                        D.a({ className: 'better-inputs b3',
+                        onClick: function (e) {
+                            self._setBetSize(`${1}`);
+                        } }, 'min'),
+                    ),
+                    D.li({},
+                        D.a({ className: 'better-inputs b4',
+                        onClick: function (e) {
+                            self._setBetSize(`${Math.floor(Engine.balanceSatoshis)}`);
+                        } }, 'max'),
+                    ),
                 )
             );
             var autoCashContainer = D.div({ className: 'autocash-container', key: 'ci-2' },
@@ -164,7 +202,8 @@ define([
             if(this.props.isMobileOrSmall || this.props.controlsSize === 'small') {
                 controlInputs = D.div({ className: 'control-inputs-container' },
                     D.div({ className: 'input-control' },
-                        betContainer
+                        betContainer,
+                        betInputs
                     ),
 
                     D.div({ className: 'input-control' },
@@ -175,7 +214,8 @@ define([
                 controlInputs = [];
 
                 controlInputs.push(D.div({ className: 'input-control controls-row', key: 'coi-1' },
-                    betContainer
+                    betContainer,
+                    betInputs
                 ));
 
                 controlInputs.push(D.div({ className: 'input-control controls-row', key: 'coi-2' },
@@ -221,7 +261,7 @@ define([
         //                D.b({className: 'green'}, pi.stopped_at / 100, 'x'),
         //                ' / Won: ',
         //                D.b({className: 'green'}, Clib.formatSatoshis(pi.bet * pi.stopped_at / 100)),
-        //                ' ', Clib.grammarBits(pi.bet * pi.stopped_at / 100)
+        //                ' ', Clib.grammarBnbs(pi.bet * pi.stopped_at / 100)
         //            );
         //
         //        } else { // user still in game
@@ -235,7 +275,7 @@ define([
         //            if (pi.bonus) {
         //                bonus = D.span(null, ' (+',
         //                    Clib.formatSatoshis(pi.bonus), ' ',
-        //                    Clib.grammarBits(pi.bonus), ' bonus)'
+        //                    Clib.grammarBnbs(pi.bonus), ' bonus)'
         //                );
         //            }
         //
@@ -243,7 +283,7 @@ define([
         //                D.b({className: 'green'}, pi.stopped_at / 100, 'x'),
         //                ' / Won: ',
         //                D.b({className: 'green'}, Clib.formatSatoshis(pi.bet * pi.stopped_at / 100)),
-        //                ' ', Clib.grammarBits(pi.bet * pi.stopped_at / 1000),
+        //                ' ', Clib.grammarBnbs(pi.bet * pi.stopped_at / 1000),
         //                bonus
         //            );
         //        } else if (pi) { // bet and lost
@@ -251,14 +291,14 @@ define([
         //            if (pi.bonus) {
         //                bonus = D.span(null, ' (+ ',
         //                    Clib.formatSatoshis(pi.bonus), ' ',
-        //                    Clib.grammarBits(pi.bonus), ' bonus)'
+        //                    Clib.grammarBnbs(pi.bonus), ' bonus)'
         //                );
         //            }
         //
         //            return D.span(null,
         //                'Busted @ ', D.b({className: 'red'},
         //                    this.state.engine.tableHistory[0].game_crash / 100, 'x'),
-        //                ' / You lost ', D.b({className: 'red'}, pi.bet / 100), ' ', Clib.grammarBits(pi.bet),
+        //                ' / You lost ', D.b({className: 'red'}, pi.bet / 100), ' ', Clib.grammarBnbs(pi.bet),
         //                bonus
         //            );
         //

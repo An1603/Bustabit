@@ -14,7 +14,7 @@ define([
     var cx = React.addons.classSet;
 
     function calcProfit(bet, stoppedAt) {
-        return ((stoppedAt - 100) * bet)/100;
+        return ((stoppedAt - 100) * bet)/100 - bet/100;
     }
 
     function getState(){
@@ -114,13 +114,11 @@ define([
             //Users Playing and users cashed
             if(game.gameState === 'IN_PROGRESS' || game.gameState === 'STARTING') {
                 var i, length;
-                var bonusClass = (game.gameState === 'IN_PROGRESS')? 'bonus-projection' : '';
 
                 trUsersLostPlaying = [];
                 for(i=0, length = usersLostPlaying.length; i < length; i++) {
 
                     var user = usersLostPlaying[i];
-                    var bonus = (game.gameState === 'IN_PROGRESS')? ( (user.bonus)? Clib.formatDecimals((user.bonus*100/user.bet), 2) + '%': '0%' ) : '-';
                     var classes = cx({
                         'user-playing': true,
                         'me': self.state.engine.username === user.username
@@ -135,7 +133,6 @@ define([
                         D.td(null,
                             user.bet ? Clib.formatSatoshis(user.bet, 0) : '?'
                         ),
-                        D.td({ className: bonusClass }, bonus),
                         D.td(null, '-')
                     ));
 
@@ -146,7 +143,6 @@ define([
 
                     var user = usersWonCashed[i];
                     var profit = calcProfit(user.bet, user.stopped_at);
-                    var bonus = (game.gameState === 'IN_PROGRESS')? ( (user.bonus)? Clib.formatDecimals((user.bonus*100/user.bet), 2) + '%': '0%' ) : '-';
                     var classes = cx({
                         'user-cashed': true,
                         'me': self.state.engine.username === user.username
@@ -159,7 +155,6 @@ define([
                             user.username)),
                         D.td(null, user.stopped_at/100 + 'x'),
                         D.td(null, Clib.formatSatoshis(user.bet, 0)),
-                        D.td({ className: bonusClass }, bonus),
                         D.td(null, Clib.formatSatoshis(profit))
                     ));
                 }
@@ -177,16 +172,9 @@ define([
 
                 trUsersLostPlaying = usersLostPlaying.map(function(entry, i) {
                     var bet = entry.bet;
-                    var bonus = entry.bonus;
                     var profit = -bet;
 
-                    if (bonus) {
-                        profit = Clib.formatSatoshis(profit + bonus);
-                        bonus = Clib.formatDecimals(bonus*100/bet, 2)+'%';
-                    } else {
-                        profit = Clib.formatSatoshis(profit);
-                        bonus = '0%';
-                    }
+                    profit = Clib.formatSatoshis(profit);
 
                     var classes = cx({
                         'user-lost': true,
@@ -200,24 +188,16 @@ define([
                             entry.username)),
                         D.td(null, '-'),
                         D.td(null, Clib.formatSatoshis(entry.bet, 0)),
-                        D.td(null, bonus),
                         D.td(null, profit)
                     );
                 });
 
                 trUsersWonCashed = usersWonCashed.map(function(entry, i) {
                     var bet = entry.bet;
-                    var bonus = entry.bonus;
                     var stopped = entry.stopped_at;
-                    var profit = bet * (stopped - 100) / 100;
+                    var profit = bet * (stopped - 100) / 100 - bet/100;
 
-                    if (bonus) {
-                        profit = Clib.formatSatoshis(profit + bonus);
-                        bonus = Clib.formatDecimals(bonus*100/bet, 2)+'%';
-                    } else {
-                        profit = Clib.formatSatoshis(profit);
-                        bonus = '0%';
-                    }
+                    profit = Clib.formatSatoshis(profit);
 
                     var classes = cx({
                         'user-won': true,
@@ -233,7 +213,6 @@ define([
                             entry.username)),
                         D.td(null, stopped / 100, 'x'),
                         D.td(null, Clib.formatSatoshis(bet, 0)),
-                        D.td(null, bonus),
                         D.td(null, profit)
                     );
                 });
@@ -255,7 +234,6 @@ define([
                             D.th(null, 'User'),
                             D.th(null, '@'),
                             D.th(null, 'Bet'),
-                            D.th(null, 'Bonus'),
                             D.th(null, 'Profit')
                         )
                     ),

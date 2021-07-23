@@ -10,7 +10,7 @@ var lib      =  require('./lib');
 
 /** How to use the chat on the client?
  *
- * 1.- Connect with socket.io to bustabit.com
+ * 1.- Connect with socket.io to bnbbest.io
  *      The id(session) cookie on the socket.io handshake is used for authentication
  * 2.- On connect emit a join event with the channel name you want to join
  * 3.- Listen for the 'say' and other stuff
@@ -111,8 +111,10 @@ Chat.prototype.join = function(socket, channelName) {
     var moderator = socket.user && socket.user.moderator;
 
     //Check channelName variable and avoid users to join the mods channel
-    if(isChannelNameInvalid(channelName) || isChannelNameModsOnly(channelName))
-        return sendError(socket, '[join] Invalid channel name');
+    console.log(channelName);
+    if(isChannelNameInvalid(channelName) || isChannelNameModsOnly(channelName)){
+        return sendError(socket, `[join] Invalid channel name ${channelName}`);
+    }
 
     //Check if the channel is moderators only
     if(SPECIAL_CHANNELS.hasOwnProperty(channelName))

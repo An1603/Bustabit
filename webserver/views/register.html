@@ -1,13 +1,8 @@
 {{##def.page_title = 'Register' #}}
-
 {{##def.content:
-<script src='https://www.google.com/recaptcha/api.js'></script>
 <script type="text/javascript">
-		var submitEnabled = false;
-		function enableSubmit() {
-			submitEnabled = true;
-      var s = document.getElementById('registerSubmit');
-      s.style.display = 'block';
+    function enableSubmit() {
+        $('#registerSubmit').prop("disabled", false);
     }
 
     window.onload = function () {
@@ -24,64 +19,69 @@
         } else document.getElementById("confirmation").setCustomValidity('');
     }
 </script>
-        <div class="register">
-            <form action="/register" method="post" onsubmit="return submitEnabled;">
-                <div class="row">
-                    <div class="large-7 columns input">
-                        <h5>Create a new account <small><a href="login">already have one?</a></small></h5>
-                        <hr>
-                    </div>
-
-                    <div class="large-7 columns input">
-
-                        <div class="row">
-                            <div class="large-3 columns">
-                                <label for="username">Username</label>
-                            </div>
-                            <div class="large-9 columns">
-                                <input id="username" type="text" name="user[name]" value="{{?it.values}}{{!it.values.name}}{{?}}" autocomplete="off" pattern="[A-Za-z0-9_\-]{3,16}" title="Username only allowed alphanumeric, hyphen and underscore" required />
+<div class="login-page">
+    <div class="login-box">
+        <div class="card">
+            <div class="card-body login-card-body">
+                <form action="/register" method="post" onsubmit="return submitEnabled;">
+                    <div class="input-group mb-3">
+                        <input id="username" class="form-control" type="text" name="user[name]" placeholder="Username" value="{{?it.values}}{{!it.values.name}}{{?}}" autocomplete="off" pattern="[A-Za-z0-9_\-]{3,16}" title="Username only allowed alphanumeric, hyphen and underscore" required />
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-envelope"></span>
                             </div>
                         </div>
                     </div>
-                    <div class="large-7 columns input">
-
-                        <div class="row">
-                            <div class="large-3 columns">
-                                <label for="email">*Recovery Email</label>
-                            </div>
-                            <div class="large-9 columns">
-                                <input type="email" id="email" value="{{?it.values}}{{!it.values.email}}{{?}}" placeholder="you@email.com" name="user[email]" autocomplete="off"/>
-                                <small><b>* Optional</b> although we <b>strongly advise you to use one</b>, otherwise it is <b>not possible</b> to password reset!</small>
+                    <div class="input-group mb-3">
+                        <input type="email" placeholder="you@email.com" name="user[email]" value="{{?it.values}}{{!it.values.email}}{{?}}" class="form-control" placeholder="Email">
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-envelope"></span>
                             </div>
                         </div>
                     </div>
-                    <div class="large-7 columns input">
-                        <div class="row">
-                            <div class="large-3 columns">
-                                <label>Password</label>
-                            </div>
-                            <div class="large-9 columns">
-                                <input id="password" type="password" value="{{?it.values}}{{!it.values.password}}{{?}}" name="user[password]" autocomplete="off" pattern=".{7,200}" title="Password should be at least 7 characters" required/>
-                                <small>Pick something secure, at least 7 characters</small>
+                    <div class="input-group mb-3">
+                        <input id="password" class="form-control" type="password" placeholder="Password" value="{{?it.values}}{{!it.values.password}}{{?}}" name="user[password]" autocomplete="off" pattern=".{7,200}" title="Password should be at least 7 characters" required/>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
                             </div>
                         </div>
                     </div>
-                    <div class="large-7 columns input">
-                        <div class="row">
-                            <div class="large-3 columns">
-                                <label>Confirm Password</label>
-                            </div>
-                            <div class="large-9 columns">
-                                <input id="confirmation" type="password" value="{{?it.values}}{{!it.values.confirm}}{{?}}" name="user[confirm]" autocomplete="off" pattern=".{7,200}" data-equal-id="password" required/>
+                    <div class="input-group mb-3">
+                        <input id="confirmation" class="form-control" type="password" value="{{?it.values}}{{!it.values.confirm}}{{?}}" name="user[confirm]" placeholder="Confirm password" autocomplete="off" pattern=".{7,200}" data-equal-id="password" required/>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-lock"></span>
                             </div>
                         </div>
                     </div>
-                    <div class="large-7 columns">
+                    <div class="input-group mb-3">
+                        <input type="text" placeholder="Sponsor username" name="user[sponsor]" value="{{?it.values}}{{!it.values.sponsor}}{{?}}" class="form-control" required {{?it.values}}{{!'readonly'}}{{?}}/>
+                        <div class="input-group-append">
+                            <div class="input-group-text">
+                                <span class="fas fa-user"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row d-flex justify-content-center mb-3">
                         <div class="g-recaptcha" data-sitekey="{{=it.recaptchaKey}}" data-callback="enableSubmit"></div>
-                        <input id="registerSubmit" style="display: none" class="border-button blue" type="submit" value="Register"/>
                     </div>
-                </div>
-            </form>
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="submit" id="registerSubmit" class="btn btn-primary btn-block" disabled>Register</button>
+                            <p class="mb-1 text-center">
+                                <a href="/login">Sign in</a>
+                            </p>
+                        </div>
+                        <!-- /.col -->
+                    </div>
+                </form>
+            </div>
+            <!-- /.login-card-body -->
         </div>
+    </div>
+</div>
+<!-- /.content -->
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/authenticate')}}

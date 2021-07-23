@@ -1,11 +1,11 @@
 {{##def.page_title = 'Leader Board' #}}
 
 {{##def.content:
-<div class="content row panel radius">
+<div class="content panel radius">
 
     <h5 id="top">Top 100 players</h5>
     <hr>
-    <table class="leaders">
+    <table class="table table-bordered">
         <thead>
             <tr>
                 <td>
@@ -14,10 +14,10 @@
                 <td>
                     Player
                 </td>
-                <td class="ldb-gross">
+                <td>
                     {{?it.sortBy != 'gross_profit'}}<a href="/leaderboard"><i class="fa fa-sort-desc"></i></a>{{?}} Gross Profit <strong><a href="/faq#gross-profit">?</a></strong>
                 </td>
-                <td class="ldb-net">
+                <td>
                     {{?it.sortBy != 'net_profit' || it.order != 'DESC' }}<a href="/leaderboard?by=net_desc"><i class="fa fa-sort-desc"></i></a>{{?}} Net Profit {{?it.sortBy != 'net_profit' || it.order != 'ASC' }}<a href="/leaderboard?by=net_asc"><i class="fa fa-sort-asc"></i></a>{{?}}
                 </td>
             </tr>
@@ -48,4 +48,4 @@
 </div>
 #}}
 
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/public')}}

@@ -15,26 +15,20 @@ var _ = require('lodash');
 
 var server;
 
-if (config.USE_HTTPS) {
-    var options = {
-        key: fs.readFileSync(config.HTTPS_KEY),
-        cert: fs.readFileSync(config.HTTPS_CERT),
-        secureProtocol: 'SSLv23_method',
-        secureOptions: constants.SSL_OP_NO_SSLv3 | constants.SSL_OP_NO_SSLv2
-    };
+var options = {
+    key: fs.readFileSync(config.HTTPS_KEY),
+    cert: fs.readFileSync(config.HTTPS_CERT),
+    secureProtocol: 'SSLv23_method',
+    secureOptions: constants.SSL_OP_NO_SSLv3 | constants.SSL_OP_NO_SSLv2
+};
 
-    if (config.HTTPS_CA) {
-        options.ca = fs.readFileSync(config.HTTPS_CA);
-    }
-
-    server = require('https').createServer(options).listen(config.PORT, function() {
-        console.log('Listening on port ', config.PORT, ' on HTTPS!');
-    });
-} else {
-    server = require('http').createServer().listen(config.PORT, function() {
-        console.log('Listening on port ', config.PORT, ' with http');
-    });
+if (config.HTTPS_CA) {
+    options.ca = fs.readFileSync(config.HTTPS_CA);
 }
+
+server = require('https').createServer(options).listen(config.PORT, function() {
+    console.log('Listening on port ', config.PORT, ' on HTTPS!');
+});
 
 async.parallel([
     database.getGameHistory,
@@ -51,7 +45,8 @@ async.parallel([
     var info = results[1];
     var bankroll = results[2];
 
-    console.log('Have a bankroll of: ', bankroll/1e8, ' btc');
+    console.log(results[2]);
+    console.log('Have a bankroll of: ', bankroll/1e8, ' bnb');
 
     var lastGameId = info.id;
     var lastHash = info.hash;

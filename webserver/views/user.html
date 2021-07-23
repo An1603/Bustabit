@@ -1,7 +1,7 @@
 {{##def.page_title = 'User Stats' #}}
 
 {{##def.content:
-    <div class="content row panel radius">
+    <div class="content panel radius">
         <h4>Player:
             {{?it.user && it.stats.username == it.user.username}}
                 <strong>
@@ -11,29 +11,29 @@
                <strong> <b>{{=it.stats.username}}</b></strong>
             {{?}}
         </h4>
-        <div id="statistics" class="row">
-            <div class="columns data large-3">
+        <div class="row">
+            <div class="col-lg-3">
                 <p><b>Games Played </b></p>
                 <h5>{{=it.stats.games_played}}</h5>
             </div>
-            <div class="rank columns data large-3">
+            <div class="col-lg-3">
                 <a href="/leaderboard">
                     <p><b>Rank </b></p>
                     <h5>{{=it.stats.rank}}</h5>
                 </a>
             </div>
-            <div class="columns data large-3">
+            <div class="col-lg-3">
                 <p>
                     <b>Gross Profit </b>
                         <strong><a href="/faq#gross-profit">?</a></strong>
                 </p>
-                <h5>{{#def.format: { n: it.stats.gross_profit, decimals: 2} }} bits</h5>
+                <h5>{{#def.format: { n: it.stats.gross_profit, decimals: 2} }} bnbs</h5>
             </div>
-            <div class="columns data large-3">
+            <div class="col-lg-3">
                 <p>
                     <b>Net Profit</b>
                 </p>
-                <h5>{{#def.format: { n: it.stats.net_profit, decimals: 2} }} bits</h5>
+                <h5>{{#def.format: { n: it.stats.net_profit, decimals: 2} }} bnbs</h5>
             </div>
         </div>
         <hr>
@@ -67,4 +67,4 @@
 
     </div>
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/public')}}

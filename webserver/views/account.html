@@ -1,94 +1,88 @@
 {{##def.page_title = 'Your account' #}}
 {{##def.content:
-<script type="text/javascript">
-    function logout() {
-        if (document.getElementById('logout') ) {
-            if (confirm("Are you sure you want to log out?")) {
-                document.getElementById("logout").submit();
-            }
-        }
-    }
+<div class="content">
+    <div class="container-fluid">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="panel1-tab"  data-toggle="pill" href="#panel1" role="tab"
+                    aria-controls="panel1" aria-selected="true">Account</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="panel2-tab"  data-toggle="pill" href="#panel2" role="tab" aria-controls="panel2"
+                    aria-selected="false">Account Information</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="panel1" role="tabpanel" aria-labelledby="panel1-tab">
+                <div class="row">
+                    <div class="col-lg-12">
+                        Sponsor: {{=it.user.sponsor_name == null ? 'None': it.user.sponsor_name }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="input-group mb-3">
+                            <input type="text" id="urlRegister" value="https://bnbbest.io/register?sponsor={{=it.user.username}}" class="form-control" readonly>
+                            <div class="input-group-append">
+                              <span class="input-group-text btn-clipboard" data-clipboard-target="#urlRegister">Copy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6">
+                        <b>Deposit Address:</b><br />
+                        <div class="input-group mb-3">
+                            <input type="text" id="urlDeposit" value="{{=it.user.deposit_address}}" class="form-control" readonly>
+                            <div class="input-group-append">
+                              <span class="input-group-text btn-clipboard" data-clipboard-target="#urlDeposit">Copy</span>
+                            </div>
+                        </div>
+                        <img alt="" class="show-for-medium-up qr"
+                            src="https://chart.googleapis.com/chart?chs=300x300&amp;cht=qr&amp;chl={{=it.user.deposit_address}}&amp;choe=UTF-8">
+                    </div>
+                    <div class="col-lg-6">
+                        Transfer binance coins to this address to have your account credited. Accounts are only
+                        credited after <b>one binance coin confirmation</b>
+                        which depending on external factors can take a while. You can check
+                        <a href="https://bscscan.com/address/{{=it.user.deposit_address}}">bscscan.com</a> to see if
+                        your transactions have confirmed yet.
+                        <strong><a href="/faq#deposit"> <small>more?</small></a></strong>
+                    </div>
+                </div>
+                <a class="btn btn-primary" href="/leaderboard">Leaderboard</a>
+                <a class="btn btn-primary" href="/user/{{=it.user.username}}">Public Profile</a>
+
+            </div>
+            <div class="tab-pane fade" id="panel2" role="tabpanel" aria-labelledby="panel2-tab">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <p><b>Deposits </b></p>
+                        <h5>{{#def.format:{n: it.user.total_deposit, decimals:2} }} bnbs</h5>
+                    </div>
+                    <div class="col-lg-4">
+                        <p><b>Withdrawals </b></p>
+                        <h5>{{#def.format:{n: it.user.total_withdraw, decimals:2} }} bnbs</h5>
+                    </div>
+                    <div class="col-lg-4">
+                        <p><b>Commissions </b></p>
+                        <h5>{{#def.format:{n: it.user.total_commissions, decimals:2} }} bnbs</h5>
+                    </div>
+                    <div class="col-lg-4">
+                        <p><b>Net Profit</b></p>
+                        <h5>{{#def.format:{n: it.user.net_profit, decimals:2} }} Bnbs</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /.col-md-12 -->
+</div>
+<script>
+    $( document ).ready(function() {
+        setInterval(ajaxCall, 5000);
+    });
 </script>
-<form action="/logout" method="post" id='logout'></form>
-<div class="content row panel radius">
-
-    <div class="settings">
-        <div class="small-2 columns">
-            <ul class="menu">
-                <li class="active">
-                   Account
-                </li>
-                <li>
-                    <a href="/security">Security</a>
-                </li>
-                <li>
-                    <a href="/deposit">Deposit</a>
-                </li>
-                <li>
-                    <a href="/withdraw">Withdraw</a>
-                </li>
-
-                <li>
-                    <a href="/support">Support</a>
-                </li>
-                <li>
-                    <a onclick="logout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-        <div class="small-10 columns sets-content">
-            <h5>Account</h5>
-            <hr>
-            <p class="account">
-                <b>Deposit Address:</b>
-                <input type="text" value="{{=it.user.deposit_address}}" readonly>
-                <a href="bitcoin:{{=it.user.deposit_address}}?message=deposit">Bitcoin link</a>
-            </p>
-            <div class="row">
-                <div class="large-5 columns">
-                    <img class="show-for-medium-up qr" src="https://blockchain.info/qr?data={{=it.user.deposit_address}}&size=150" alt=""/>
-                </div>
-                <div class="large-6 columns">
-                    Transfer bitcoins to this address to have your account credited. Accounts are only credited after <b>one bitcoin confirmation</b>
-                    which depending on external factors can take a while. You can check
-                     <a href="https://blockchain.info/address/{{=it.user.deposit_address}}">blockchain.info</a> to see if your transactions have confirmed yet.
-                    <strong><a href="/faq#deposit"> <small>more?</small></a></strong>
-                </div>
-            </div>
-            <br>
-            <a class="border-button blue right"href="/user/{{=it.user.username}}">Public Profile</a>
-            <h5>Account Information</h5>
-            <div id="statistics" class="row">
-                <div class="columns data large-3">
-                    <p><b>Deposits </b></p>
-                    <h5>{{#def.format:{n: it.user.deposits, decimals:2} }} bits</h5>
-                </div>
-                <div class="columns data large-3">
-                    <p><b>Withdrawals </b></p>
-                    <h5>{{#def.format:{n: it.user.withdrawals, decimals:2} }} bits</h5>
-                </div>
-                <div class="columns data large-3">
-                    <p><b>Free Bits Collected </b></p>
-                    <h5>{{#def.format:{n: it.user.giveaways, decimals:2} }}</h5>
-                </div>
-                <div class="columns data large-3">
-                    <p><b>Net Profit</b></p>
-                    <h5>{{#def.format:{n: it.user.net_profit, decimals:2} }} Bits</h5>
-                </div>
-            </div>
-
-            <br>
-            {{?typeof it.user.eligible !== 'number' }}
-                {{?it.user.balance_satoshis > 100}}
-                    <div class="success bits">You are eligible for a free 2 bits <a href="/request">CLICK HERE TO REQUEST THEM!</a></div>
-                {{?}}
-            {{??}}
-                <div class="success bits">You'll be eligible for 2 free bits in {{=it.user.eligible}} minutes</div>
-            {{?}}
-        </div>
-    </div>
-    </div>
+<!-- /.content -->
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/public')}}

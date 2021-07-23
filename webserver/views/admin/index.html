@@ -1,0 +1,182 @@
+{{##def.page_title = 'Statistics' #}}
+
+{{##def.content:
+<!-- <h5>Bnbbest.io Statistics</h5>
+    <small>Generated {{! it.generated }}</small> -->
+    <div class="row">
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Pending Withdraws</span>
+          <span class="info-box-number">{{= it.stats.pending_withdrawals.count }}</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Unterminated Games</span>
+          <span class="info-box-number">{{= it.stats.unterminated_games.count }}</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="fas fa-money-bill"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Deposits</span>
+          <span class="info-box-number">{{#def.format: {n: it.stats.deposits.sum} }} bnbs</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="fas fa-money-bill"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Withdrawals</span>
+          <span class="info-box-number">{{#def.format: { n: it.stats.withdrawals.sum } }} bnbs</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="fas fa-money-bill"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Net</span>
+          <span class="info-box-number">{{#def.format: { n: (it.stats.deposits.sum - (it.stats.withdrawals.sum * -1)) } }} bnbs</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="fas fa-money-bill"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Total Wagered</span>
+          <span class="info-box-number">{{#def.format: {n: it.stats.plays.total_bet } }} bnbs</span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Players won in cashed</span>
+          <span class="info-box-number">{{#def.format: {n: it.stats.plays.cashed_out } }} bnbs <small>(
+            {{= (it.stats.plays.cashed_out / it.stats.plays.total_bet * 100).toFixed(2) }}%
+        )</small></span>
+          </div>
+          <!-- /.info-box-content -->
+        </div>
+        <!-- /.info-box -->
+      </div>
+      <!-- <div class="col-md-4">
+        <div class="info-box">
+          <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+      
+          <div class="info-box-content">
+          <span class="info-box-text">Players won in total</span>
+          <span class="info-box-number">{{#def.format: {n: (9 + it.stats.plays.cashed_out + it.stats.plays.bonused) } }} bnbs <small>(
+            {{= ((it.stats.plays.cashed_out + it.stats.plays.bonused) / it.stats.plays.total_bet * 100).toFixed(2) }}%
+            )</small></span>
+          </div>
+        </div>
+      </div> -->
+        <div class="col-md-4">
+          <div class="info-box">
+            <span class="info-box-icon bg-info"><i class="fas fa-money-bill"></i></span>
+        
+            <div class="info-box-content">
+            <span class="info-box-text">Our Profit</span>
+            <span class="info-box-number">{{#def.format: {n: it.stats.plays.total_bet - it.stats.plays.cashed_out - it.stats.plays.bonused  } }} bnbs
+              <small>(
+                  {{= ((it.stats.plays.total_bet - it.stats.plays.cashed_out - it.stats.plays.bonused ) / it.stats.plays.total_bet * 100).toFixed(2) }}%
+                  )</small></span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <div class="col-md-4">
+          <div class="info-box">
+            <span class="info-box-icon bg-info"><i class="fas fa-university"></i></span>
+        
+            <div class="info-box-content">
+            <span class="info-box-text">Bankroll</span>
+            <span class="info-box-number">{{#def.format: {n: it.stats.plays.total_bet - it.stats.plays.cashed_out - it.stats.plays.bonused + it.stats.bankroll_offset } }} bnbs</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <div class="col-md-4">
+          <div class="info-box">
+            <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+        
+            <div class="info-box-content">
+            <span class="info-box-text">Max win per game</span>
+            <span class="info-box-number">{{#def.format: {n: (it.stats.plays.total_bet - it.stats.plays.cashed_out - it.stats.plays.bonused + it.stats.bankroll_offset)*0.03 } }} bnbs</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+        <div class="col-md-4">
+          <div class="info-box">
+            <span class="info-box-icon bg-info"><i class="far fa-envelope"></i></span>
+        
+            <div class="info-box-content">
+            <span class="info-box-text">Total Users</span>
+            <span class="info-box-number">{{=it.stats.users.count}}</span>
+            </div>
+            <!-- /.info-box-content -->
+          </div>
+          <!-- /.info-box -->
+        </div>
+          <div class="col-md-4">
+            <div class="info-box">
+              <span class="info-box-icon bg-info"><i class="fas fa-play"></i></span>
+          
+              <div class="info-box-content">
+              <span class="info-box-text">Total Plays</span>
+              <span class="info-box-number">{{=it.stats.plays.count }}</span>
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+          <div class="col-md-4">
+            <div class="info-box">
+              <span class="info-box-icon bg-info"><i class="fas fa-gamepad"></i></span>
+          
+              <div class="info-box-content">
+              <span class="info-box-text">Total Games</span>
+              <span class="info-box-number">{{=it.stats.games.count }}</span>
+              </div>
+              <!-- /.info-box-content -->
+            </div>
+            <!-- /.info-box -->
+          </div>
+          </div>
+#}}
+{{#def.include('../template/public')}}

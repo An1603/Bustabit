@@ -1,0 +1,181 @@
+{{##def.page_title = 'User Stats' #}}
+{{##def.content:
+    <div class="modal" tabindex="-1" role="dialog" id="changeRoleModal">
+        <form action="/public/users/:id/changerole" method="post">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Change Role</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">Role</label>
+                            <select class="form-control" name="role">
+                                <option value="user">User</option>
+                                <option value="moderator">Moderator</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Change</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+<div class="modal" tabindex="-1" role="dialog" id="changePasswordModal">
+    <form action="/public/users/:id/resetpassword" method="post">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Change password</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">Password reset <b>{{=it.userDetail.username}}</b> <span class="small">at least 7
+                            characters</span></label>
+                        <input class="form-control" type="password" autocomplete="off" pattern=".{7,200}" id="password" name="password"
+                            required />
+                    </div>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">Confirmation</label>
+                        <input class="form-control" type="password" autocomplete="off" pattern=".{7,200}" id="confirmation" name="confirmation"
+                        required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<h4>Player:
+    <strong> <b>{{=it.userDetail.username}}</b></strong>
+</h4>
+<div id="statistics" class="row">
+    <div class="col-md-6">
+        <b>Deposit Address:</b><br />
+        <div class="input-group mb-3">
+            <input type="text" id="urlDeposit" value="{{=it.userDetail.address}}" class="form-control" readonly>
+            <div class="input-group-append">
+              <span class="input-group-text btn-clipboard" data-clipboard-target="#urlDeposit">Copy</span>
+            </div>
+        </div>
+        <a href="https://bscscan.com/address/{{=it.userDetail.address}}">Binance coin link</a>
+    </div>
+    <div class="col-md-3">
+        <p><b>Games Played </b></p>
+        <h5>{{=it.userDetail.games_played}}</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Gross Profit </b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.gross_profit, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Net Profit</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.net_profit, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Total win</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.total_win, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Total lose</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.total_lose, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Number win</b>
+        </p>
+        <h5>{{=it.userDetail.number_win}}</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Number lose</b>
+        </p>
+        <h5>{{=it.userDetail.number_lose}}</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Total deposits</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.total_deposit, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Number deposit</b>
+        </p>
+        <h5>{{=it.userDetail.number_deposit}}</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Total withdraws</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.total_withdraw, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Number withdraw</b>
+        </p>
+        <h5>{{=it.userDetail.number_withdraw}}</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Total commissions</b>
+        </p>
+        <h5>{{#def.format: { n: it.userDetail.total_commissions, decimals: 2} }} bnbs</h5>
+    </div>
+    <div class="col-md-3">
+        <p>
+            <b>Role</b>
+        </p>
+        <h5>{{=it.userDetail.userclass }}</h5>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-3">
+        <a href="#" data-href="/admin/users/{{=it.userDetail.id}}/resetpassword"
+            class="btn btn-success text-white reset_password">
+            <i class="fa fa-check fa-fw"></i>Change password
+        </a>
+    </div>
+    <div class="col-md-3">
+        <a href="#" data-href="/admin/users/{{=it.userDetail.id}}/changerole"
+            class="btn btn-success text-white change_role">
+            <i class="fa fa-check fa-fw"></i>Change Role
+        </a>
+    </div>
+</div>
+<!-- /.content -->
+<script>
+    $(document).on('click', 'a.reset_password', function () {
+        var href = $(this).data('href');
+        $('#changePasswordModal').modal('show').find('form').attr('action', href);
+        return false;
+    });
+    $(document).on('click', 'a.change_role', function () {
+        var href = $(this).data('href');
+        $('#changeRoleModal').modal('show').find('form').attr('action', href);
+        return false;
+    });
+</script>
+#}}
+{{#def.include('../template/public')}}

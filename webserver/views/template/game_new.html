@@ -2,7 +2,24 @@
 
 <!DOCTYPE html>
 <html>
-{{#def.include('head_new')}}
+<head>
+    <title>{{# def.page_title || 'Social Binance coin Gambling' }} -- Bnbbest.io</title>
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/img/favicon.ico" type="image/x-icon">
+    <meta charset="utf-8" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height"/>
+    {{?it.table}}
+        <link rel="stylesheet" href="/css/{{? it.buildConfig }}{{=it.buildConfig['game-new.css']}}{{??}}game.css{{?}}" />
+    {{??}}
+        <link rel="stylesheet" href="{{? it.buildConfig }} /css/{{=it.buildConfig['app-new.css']}} {{??}} /css/app.css {{?}}" />
+    {{?}}
+    <!-- Toastr -->
+    <link rel="stylesheet" href="https://adminlte.io/themes/dev/AdminLTE/plugins/toastr/toastr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://adminlte.io/themes/v3/plugins/jquery/jquery.min.js"></script>
+    <script src="https://adminlte.io/themes/dev/AdminLTE/plugins/sweetalert2/sweetalert2.min.js"></script>
+</head>
 <body>
 
 <div id="game-wrapper">
@@ -46,5 +63,37 @@
 
 </div>
 
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+    });
+    var time = Math.ceil(new Date()/1000);
+    function ajaxCall() {
+        $.ajax({
+            type: 'GET',
+            url: '/check-deposit?time='+time,
+            success: function(response){
+                if(response.status == 'ok'){
+                    for(var i=0;i < response.deposits.length; i++){
+                        var aDeposit = response.deposits[i];
+                        if (aDeposit.timestamp > time){
+                            time = aDeposit.timestamp+1;
+                        }
+                        Toast.fire({
+                            type: 'success',
+                            title: `Deposit with amount ${aDeposit.amount} received`
+                        });
+                    }
+                    if(response.deposits.length > 0){
+                        location.reload();
+                    }
+                }
+            }
+        });
+    }
+</script>
 </body>
 </html>

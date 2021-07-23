@@ -17,7 +17,7 @@ define([
 
     function getState() {
         return {
-            balanceBitsFormatted: Clib.formatSatoshis(Engine.balanceSatoshis),
+            balanceBnbsFormatted: Clib.formatSatoshis(Engine.balanceSatoshis),
             theme: GameSettingsStore.getCurrentTheme()//black || white
         }
     }
@@ -72,9 +72,22 @@ define([
             var userLogin;
             if(this.state.username) {
                 userLogin = D.div({ className: 'user-login' },
-                    D.div({ className: 'balance-bits' },
-                        D.span(null, 'Bits: '),
-                        D.span({ className: 'balance' }, this.state.balanceBitsFormatted )
+                    D.div({ className: 'username'},
+                        D.a({className: 'refreshBTN', onClick: function (e) {
+                            var _this = $('.refreshBTN');
+                            var existingHTML = _this.html();
+                            $(_this).html('<span class="fas fa-spinner fa-spin" role="status" aria-hidden="true"></span>').prop('disabled', true);
+                            ajaxCall();
+                            setTimeout(function() {
+                                $(_this).html(existingHTML).prop('disabled', false);
+                            }, 3000);
+                        }},
+                            D.span({ className : 'fa fa-redo'})
+                        )
+                    ),
+                    D.div({ className: 'balance-bnbs' },
+                        D.span(null, 'Bnbs: '),
+                        D.span({ className: 'balance' }, this.state.balanceBnbsFormatted )
                     ),
                     D.div({ className: 'username' },
                         D.a({ href: '/account'}, this.state.username
@@ -94,18 +107,10 @@ define([
             return D.div({ id: 'top-bar' },
                 D.div({ className: 'title' },
                     D.a({ href: '/' },
-                        D.h1(null, this.props.isMobileOrSmall? 'BaB' : 'bustabit')
+                        D.img({ src: '/img/' + (this.props.isMobileOrSmall? 'logoOnly.png' : 'logo.png'), height: '36px' })
                     )
                 ),
                 userLogin,
-                D.div({ className: 'toggle-view noselect' + ((this.state.theme === 'white')? ' black' : ' white'), onClick: this._toggleTheme },
-                    D.a(null,
-                        (this.state.theme === 'white')? 'Go black' : 'Go back'
-                    )
-                ),
-                D.div({ className: 'full-screen noselect', onClick: this._toggleFullScreen },
-                	 this.state.fullScreen? D.i({ className: 'fa fa-compress' }) : D.i({ className: 'fa fa-expand' })
-            	)
             )
         }
     });

@@ -78,7 +78,7 @@ Network seeding via a script tag
 
 <script src=//cdnjs.cloudflare.com/ajax/libs/seedrandom/2.3.6/seedrandom.min.js>
 </script>
-<!-- Seeds using urandom bits from a server. -->
+<!-- Seeds using urandom bnbs from a server. -->
 <script src=//jsonlib.appspot.com/urandom?callback=Math.seedrandom">
 </script>
 
@@ -134,7 +134,7 @@ with '111\0'.
 When seedrandom() is called with zero args or a null seed, it uses a
 seed drawn from the browser crypto object if present.  If there is no
 crypto support, seedrandom() uses the current time, the native rng,
-and a walk of several DOM objects to collect a few bits of entropy.
+and a walk of several DOM objects to collect a few bnbs of entropy.
 
 Each time the one- or two-argument forms of seedrandom are called,
 entropy from the passed seed is accumulated in a pool to help generate
@@ -239,7 +239,7 @@ impl = math['seed' + rngname] = function(seed, options, callback) {
     while (n >= overflow) {             // To avoid rounding up, before adding
       n /= 2;                           //   last byte, shift everything
       d /= 2;                           //   right using integer math until
-      x >>>= 1;                         //   we have exactly the desired bits.
+      x >>>= 1;                         //   we have exactly the desired bnbs.
     }
     return (n + x) / d;                 // Form the number within [0, 1).
   }, shortseed, 'global' in options ? options.global : (this == math));
@@ -340,7 +340,7 @@ function tostring(a) {
 }
 
 //
-// When seedrandom.js is loaded, we immediately mix a few bits
+// When seedrandom.js is loaded, we immediately mix a few bnbs
 // from the built-in RNG into the entropy pool.  Because we do
 // not want to intefere with determinstic PRNG state later,
 // seedrandom will not call math.random on its own again after

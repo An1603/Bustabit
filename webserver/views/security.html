@@ -14,119 +14,118 @@
             document.getElementById('confirmation').setCustomValidity("Confirmation and password should be the same");
         } else document.getElementById("confirmation").setCustomValidity('');
     }
-    function logout() {
-        if (document.getElementById('logout') ) {
-            if (confirm("Are you sure you want to log out?")) {
-                document.getElementById("logout").submit();
-            }
-        }
-    }
 </script>
-<form action="/logout" method="post" id='logout'></form>
-<div class="content row panel radius">
+<div class="content">
+    <div class="container-fluid">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="panel1-tab" data-toggle="tab" href="#panel1" role="tab"
+                    aria-controls="panel1" aria-selected="true">Update Your Password</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="panel2-tab" data-toggle="tab" href="#panel2" role="tab" aria-controls="panel2"
+                    aria-selected="false">Edit Email Address</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="panel3-tab" data-toggle="tab" href="#panel3" role="tab" aria-controls="panel3"
+                    aria-selected="false">Two factor Authentication</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="panel1">
+                <form action="reset-password" method="post" >
+                    <div class="form-group">
+                        <label for="old_password">Old Password</label>
+                        <input class="form-control" name="old_password" type="password" id="old_password" autocomplete="off" required/>
+                    </div>
+                    {{?it.user.is_otp}}
+                        <div class="form-group">
+                            <label for="exampleInputEmail1">2FA Code</label>
+                            <input class="form-control" type="text" name="otp" autocomplete="off" pattern="[0-9]{6}" required />
+                        </div>
+                    {{?}}
 
-    <div class="settings">
-        <div class="small-2 columns">
-            <ul class="menu">
-                <li>
-                    <a href="/account">Account</a>
-                </li>
-                <li class="active">
-                   Security
-                </li>
-                <li>
-                    <a href="/deposit">Deposit</a>
-                </li>
-                <li>
-                    <a href="/withdraw">Withdraw</a>
-                </li>
+                    <div class="form-group">
+                        <label for="exampleInputEmail1">New Password</label>
+                        <input class="form-control" type="password" id="password" name="password" autocomplete="off" required/>
+                    </div>
 
-                <li>
-                    <a href="/support">Support</a>
-                </li>
-                <li>
-                    <a onclick="logout();">
-                        Logout
-                    </a>
-                </li>
-            </ul>
-        </div>
-        <div class="small-10 columns sets-content">
-            <h5>Update Your Password</h5>
-            <form action="reset-password" method="post" >
-                <label for="old_password">Old Password</label>
-                <input name="old_password" type="password" id="old_password" autocomplete="off" required/>
-                {{?it.user.mfa_secret}}
-                    <label>2FA Code
-                        <input name="otp" type="text" pattern="[0-9]{6}" required />
-                    </label>
-                {{?}}
-                <label for="password">New Password <span class="small">At least 7 characters</span></label>
-                <input name="password" type="password" id="password" pattern=".{7,50}" required/>
-                <label for="confirmation">Confirm Password</label>
-                <input name="confirmation" type="password" id="confirmation" pattern=".{7,50}" required/>
-                <input type="submit" class="border-button blue right" value="Change"/>
-            </form>
-            <br>
-            <br>
-            <hr>
+                    <div class="form-group">
+                        <label for="confirmation">Confirm Password</label>
+                        <input class="form-control" type="password" id="confirmation" name="confirmation" required />
+                    </div>
 
-            <h5>Edit Email Address</h5>
-            <p class="small">In case you've forgotten your password we can send you a link to reset it, otherwise you don't have other way to recover your account.</p>
-
-            <form action="/edit-email" method="post">
-                <label for="email">Recovery Email</label>
-
-                <!-- fake fields are a workaround for chrome autofill getting the wrong fields -->
-                <input style="display:none" type="text" name="fakeusernameremembered"/>
-                <input style="display:none" type="password" name="fakepasswordremembered"/>
-
-                <input type="email" id="email" name="email" value="{{?it.user.email}}{{=it.user.email}}{{??}}{{?}}" />
-                <label for="password">Confirmation Password</label>
-                <input name="password" type="password" id="check_password" autocomplete="off" pattern=".{7,50}" required/>
-                {{?it.user.mfa_secret}}
-                    <label>2FA Code
-                        <input name="otp" type="text" autocomplete="off" pattern="[0-9]{6}" required />
-                    </label>
-                {{?}}
-                <input class="border-button right blue" type="submit" value="save"/>
-            </form>
-
-            <br>
-            <br>
-            <hr>
-            {{?it.user.mfa_secret}}
-                <h5>Disable Two-Factor Authentication</h5>
-                <p class="small">To disable two-factor authentication, please enter your one-time password.</p>
-                <form action="/disable-2fa" method="post">
-                    <label>2FA Code
-                        <input name="otp" type="text" pattern="[0-9]{6}" required />
-                    </label>
-                    <input class="border-button right blue" type="submit" value="Disable" />
+                    <input type="submit" class="btn btn-primary" value="Change"/>
                 </form>
-            {{??}}
-                <h5>Enable Two-Factor Authentication</h5>
-                <p class="small">
-                    To enable two-factor authentication, scan the following QR code or enter the secret manually, then enter your one-time password to confirm.
-                    <br>
-                    <b>If you lose your two-factor authentication codes you may be permanently locked out of your account. Ensure you backup
-                        your 2FA application, or save this QR code or secret. Do not enable 2FA unless you are sure you have a safe copy of this information</b>
-                </p>
-                <div class="column medium-6">
-                    {{=it.user.qr_svg}}
-                    <small>Secret: {{=it.user.mfa_potential_secret}}</small>
-                </div>
-                <form class="column medium-6" action="/enable-2fa" method="post">
-                    <label>2FA Code
-                        <input type="hidden" name="mfa_potential_secret" value="{{=it.user.mfa_potential_secret}}" />
-                        <input type="hidden" name="sig" value="{{=it.user.sig}}" />
-                        <input name="otp" type="text" pattern="[0-9]{6}" required />
-                    </label>
-                    <input class="border-button right blue" type="submit" value="Enable" />
+            </div>
+            <div class="tab-pane fade" id="panel2">
+                <p>In case you've forgotten your password we can send you a link to reset it, otherwise you don't have other way to recover your account.</p>
+                <form action="/edit-email" method="post">
+    
+                    <!-- fake fields are a workaround for chrome autofill getting the wrong fields -->
+                    <input style="display:none" type="text" name="fakeusernameremembered"/>
+                    <input style="display:none" type="password" name="fakepasswordremembered"/>
+    
+                    <div class="form-group">
+                        <label for="email">Recovery Email</label>
+                        <input class="form-control" name="email" type="text" id="email" value="{{?it.user.email}}{{=it.user.email}}{{??}}{{?}}" required/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Confirmation Password</label>
+                        <input class="form-control" type="password" id="password" name="password" autocomplete="off" required/>
+                    </div>
+
+                    {{?it.user.is_otp}}
+                    <div class="form-group">
+                        <label for="otp">2FA Code</label>
+                        <input class="form-control" type="text" name="otp" autocomplete="off" pattern="[0-9]{6}" required />
+                    </div>
+                    {{?}}
+                    <input class="btn btn-primary" type="submit" value="Save"/>
                 </form>
-            {{?}}
-        </div>
+            </div>
+            <div class="tab-pane fade" id="panel3">
+                {{?it.user.is_otp}}
+                    <h5>Disable Two-Factor Authentication</h5>
+                    <p class="small">To disable two-factor authentication, please enter your one-time password.</p>
+                    <form action="/disable-2fa" method="post">
+                        <div class="form-group">
+                            <label for="otp">2FA Code</label>
+                            <input class="form-control" type="text" name="otp" autocomplete="off" pattern="[0-9]{6}" required />
+                        </div>
+                        <input class="btn btn-primary" type="submit" value="Disable" />
+                    </form>
+                {{??}}
+                    <h5>Enable Two-Factor Authentication</h5>
+                    <p>
+                        To enable two-factor authentication, scan the following QR code or enter the secret manually, then enter your one-time password to confirm.
+                        <br>
+                        <b>If you lose your two-factor authentication codes you may be permanently locked out of your account. Ensure you backup
+                            your 2FA application, or save this QR code or secret. Do not enable 2FA unless you are sure you have a safe copy of this information</b>
+                    </p>
+                    <div class="row">
+
+                        <div class="col-lg-6">
+                            <img alt="" class="show-for-medium-up qr" src="https://chart.googleapis.com/chart?chs=300x300&chld=L|0&cht=qr&chl=otpauth://totp/{{=it.user.username}}%3Fsecret={{=it.user.mfa_secret}}&amp;choe=UTF-8">
+                            <br />
+                            <small>Secret: {{=it.user.mfa_secret}}</small>
+                        </div>
+                        <div class="col-lg-6">
+                            <form  action="/enable-2fa" method="post">
+                                <div class="form-group">
+                                    <label for="otp">2FA Code</label>
+                                    <input class="form-control" type="text" name="otp" autocomplete="off" pattern="[0-9]{6}" required />
+                                </div>
+                                <input class="btn btn-primary" type="submit" value="Enable" />
+                            </form>
+                        </div>
+                    </div>
+                {{?}}
+            </div>
     </div>
-    </div>
+    <!-- /.col-md-12 -->
+</div>
+<!-- /.content -->
 #}}
-{{#def.include('./template/main_old')}}
+{{#def.include('./template/public')}}

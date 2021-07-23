@@ -86,7 +86,7 @@ define([
 
         _placeBet: function () {
 
-            var bet = parseInt(this.state.betSize.replace(/k/g, '000')) * 100;
+            var bet = parseInt(this.state.betSize.replace(/k/g, '000'));
             console.assert(_.isFinite(bet));
 
             var cashOut = parseFloat(this.state.cashOut);
@@ -118,7 +118,7 @@ define([
             var self = this;
 
             if (self.state.engine.balanceSatoshis < 100)
-                return 'Not enough bits to play';
+                return 'Not enough bnbs to play';
 
             var bet = Clib.parseBet(self.state.betSize);
             if(bet instanceof Error)
@@ -129,7 +129,7 @@ define([
                 return co.message;
 
             if (self.state.engine.balanceSatoshis < bet * 100)
-                return 'Not enough bits';
+                return 'Not enough bnbs';
 
             return null;
         },
@@ -150,7 +150,7 @@ define([
                         D.b({className: 'green'}, pi.stopped_at / 100, 'x'),
                         ' / Won: ',
                         D.b({className: 'green'}, Clib.formatSatoshis(pi.bet * pi.stopped_at / 100)),
-                        ' ', Clib.grammarBits(pi.bet * pi.stopped_at / 100)
+                        ' ', Clib.grammarBnbs(pi.bet * pi.stopped_at / 100)
                     );
 
                 } else { // user still in game
@@ -164,7 +164,7 @@ define([
                     if (pi.bonus) {
                         bonus = D.span(null, ' (+',
                             Clib.formatSatoshis(pi.bonus), ' ',
-                            Clib.grammarBits(pi.bonus), ' bonus)'
+                            Clib.grammarBnbs(pi.bonus), ' bonus)'
                         );
                     }
 
@@ -172,7 +172,7 @@ define([
                         D.b({className: 'green'}, pi.stopped_at / 100, 'x'),
                         ' / Won: ',
                         D.b({className: 'green'}, Clib.formatSatoshis(pi.bet * pi.stopped_at / 100)),
-                        ' ', Clib.grammarBits(pi.bet * pi.stopped_at / 1000),
+                        ' ', Clib.grammarBnbs(pi.bet * pi.stopped_at / 1000),
                         bonus
                     );
                 } else if (pi) { // bet and lost
@@ -180,14 +180,14 @@ define([
                     if (pi.bonus) {
                         bonus = D.span(null, ' (+ ',
                             Clib.formatSatoshis(pi.bonus), ' ',
-                            Clib.grammarBits(pi.bonus), ' bonus)'
+                            Clib.grammarBnbs(pi.bonus), ' bonus)'
                         );
                     }
 
                     return D.span(null,
                         'Busted @ ', D.b({className: 'red'},
                             this.state.engine.tableHistory[0].game_crash / 100, 'x'),
-                        ' / You lost ', D.b({className: 'red'}, pi.bet / 100), ' ', Clib.grammarBits(pi.bet),
+                        ' / You lost ', D.b({className: 'red'}, pi.bet / 100), ' ', Clib.grammarBnbs(pi.bet),
                         bonus
                     );
 
@@ -220,7 +220,7 @@ define([
                         self._setBetSize(e.target.value);
                     }
                 }),
-                D.span({ className: 'sticky' }, 'Bits')
+                D.span({ className: 'sticky' }, 'Bnbs')
             );
 
             var autoCashOut = D.div(null,

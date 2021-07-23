@@ -73,14 +73,4 @@ Export the database link as an environment variable
 
     export DATABASE_URL=postgres://bustabit:<YOURPASSWORD>@localhost/bustabitdb
 
-### BIP32 Key
 
-You will need to create a BIP32 key pair. You can do at your own risk online at [bip32.org](http://bip32.org/). Export the public key as an environment variable
-
-    export BIP32_DERIVED_KEY=xpub6AH.....
-
-
-Running
-=======
-
-You can run the server by using `npm start`. By default it will listen on port `3841`.

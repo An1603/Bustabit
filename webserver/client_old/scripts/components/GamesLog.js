@@ -55,17 +55,16 @@ define([
             var self = this;
 
             var rows = self.state.engine.tableHistory.slice(0, MAX_GAMES_SHOWED).map(function (game, i) {
-                var cashed_at, bet, profit, bonus;
+                var cashed_at, bet, profit;
                 var player = game.player_info[self.state.engine.username];
 
                 if (player) {
-                    bonus = player.bonus;
                     bet = player.bet;
 
                     //If the player won
                     if (player.stopped_at) {
-                        profit = ((player.stopped_at / 100) * player.bet) - player.bet;
-                        cashed_at = Clib.formatSatoshis(player.stopped_at);
+                        profit = ((player.stopped_at / 100) * player.bet) - player.bet - player.bet/100;
+                        cashed_at = Clib.formatSatoshis(player.stopped_at/100);
 
                         //If the player lost
                     } else {
@@ -73,13 +72,6 @@ define([
                         cashed_at = '-';
                     }
 
-                    //If we got a bonus
-                    if (bonus) {
-                        profit = profit + bonus;
-                        bonus = Clib.formatDecimals(bonus*100/bet, 2)+'%';
-                    } else {
-                        bonus = '0%';
-                    }
 
                     profit = Clib.formatSatoshis(profit);
                     bet = Clib.formatSatoshis(bet);
@@ -89,7 +81,6 @@ define([
                     cashed_at = '-';
                     bet = '-';
                     profit = '-';
-                    bonus = '-';
                 }
 
                 var className;
@@ -106,11 +97,10 @@ define([
                         D.a({ href: '/game/' + game.game_id, target: '_blank',
                             className: className
                         },
-                            Clib.formatSatoshis(game.game_crash), D.i(null, 'x'))
+                            Clib.formatSatoshis(game.game_crash/100), D.i(null, 'x'))
                         ),
                     D.td(null, cashed_at),
                     D.td(null, bet),
-                    D.td(null, bonus),
                     D.td(null, profit),
                     D.td(null,
                         D.input({type: 'input', className: 'games-log-hash', readOnly: true, value: game.hash }),
@@ -128,7 +118,6 @@ define([
                         D.th(null, 'Crash'),
                         D.th(null, '@'),
                         D.th(null, 'Bet'),
-                        D.th(null, 'Bonus'),
                         D.th(null, 'Profit'),
                         D.th(null, 'Hash')
                     )

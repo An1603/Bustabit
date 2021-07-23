@@ -41,7 +41,7 @@ body {
     padding-left: 20px;
 }
 
-#top-bar .user-login .balance-bits span {
+#top-bar .user-login .balance-bnbs span {
     line-height: 40px;
     color: black;
 }
@@ -168,6 +168,7 @@ body {
     outline: none;
     font-family: inherit;
     margin: auto;
+    margin-bottom: 6px;
 }
 
 .index .play-btn-cont .play-old {
@@ -223,10 +224,6 @@ table {
     width: 100% !important;
 }
 
-.content {
-    margin-top: 50px;
-    padding-left: 10px;
-}
 
 .data {
     padding-top: 15px;
@@ -442,7 +439,6 @@ table {
 }
 
 .settings .menu {
-    width: 66px;
     margin-left: 0;
 }
 
@@ -456,7 +452,7 @@ table {
     margin-left: 0px;
     text-align: center;
 }
-.bits{
+.bnbs{
     margin: 0px;
 }
 

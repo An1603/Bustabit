@@ -104,12 +104,12 @@ module.exports = function(server,game,chat) {
             if (!lib.isInt(amount)) {
                 return sendError(socket, '[place_bet] No place bet amount: ' + amount);
             }
-            if (amount <= 0 || !lib.isInt(amount / 100)) {
-                return sendError(socket, '[place_bet] Must place a bet in multiples of 100, got: ' + amount);
+            if (amount <= 0) {
+                return sendError(socket, '[place_bet] Must place a bet > 0, got: ' + amount);
             }
 
-            if (amount > 1e8) // 1 BTC limit
-                return sendError(socket, '[place_bet] Max bet size is 1 BTC got: ' + amount);
+            if (amount > 1e8) // 1 BNB limit
+                return sendError(socket, '[place_bet] Max bet size is 1 BNB got: ' + amount);
 
             if (!autoCashOut)
                 return sendError(socket, '[place_bet] Must Send an autocashout with a bet');

@@ -1,0 +1,32 @@
+{{##def.page_title = 'Network' #}}
+{{##def.content:
+
+{{?it.user.users.length > 0}}
+    <table class="table table-bordered" id="network-table">
+        <thead>
+            <tr>
+                <td>Username</td>
+                <td>Email</td>
+                <td>Total win</td>
+                <td>Total lose</td>
+                <td>Total deposits</td>
+            </tr>
+        </thead>
+        <tbody>
+            {{~it.user.users :user:index}}
+                <tr data-id="{{=user.id}}" data-sponsor_id="{{=user.sponsor_id}}" data-path="{{=user.path}}" data-level="{{=user.level}}">
+                    <td><a href="/network?sponsor_id={{=user.id}}">{{=user.username}}</a></td>
+                    <td>{{=user.email}}</td>
+                    <td>{{#def.format: { n: user.total_win, decimals: 2} }} bnbs</td>
+                    <td>{{#def.format: { n: user.total_lose, decimals: 2} }} bnbs</td>
+                    <td>{{#def.format: { n: user.total_deposit, decimals: 2} }} bnbs</td>
+                </tr>
+            {{~}}
+        </tbody>
+    </table>
+{{??}}
+    <p>Don't have network</p>
+{{?}}
+<a href="/network" class="btn btn-primary">Back</a>
+#}}
+{{#def.include('./template/public')}}

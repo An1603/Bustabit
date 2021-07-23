@@ -52,7 +52,7 @@ exports.show = function(req, res, next) {
              order = 'ASC';
              break;
          default :
-             byDb = 'gross_profit';
+            byDb = 'net_profit';
              order = 'DESC';
      }
 

@@ -1,0 +1,29 @@
+{{##def.page_title = 'Quản lý người dùng' #}}
+{{##def.content:
+
+{{?it.users.length > 0}}
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <td>Username</td>
+                <td>Bnbs</td>
+                <td>Email</td>
+                <td class="show-for-medium-up">Created</td>
+            </tr>
+        </thead>
+        <tbody>
+            {{~it.users :user:index}}
+                <tr>
+                    <td><a href="/admin/users/{{=user.id}}">{{=user.username}}</a></td>
+                    <td>{{#def.format: {n: user.balance_satoshis, decimals: 2 } }}</td>
+                    <td>{{=user.email}}</td>
+                    <td class="show-for-medium-up">{{=user.created}}</td>
+                </tr>
+            {{~}}
+        </tbody>
+    </table>
+{{??}}
+    <p>Don't have users</p>
+{{?}}
+#}}
+{{#def.include('../template/public')}}

@@ -11,7 +11,7 @@ define([
 ){
     var CHANGE_EVENT = 'change';
 
-    var _selectedTab = 'chat'; //Tabs: chat, gamesLog, players
+    var _selectedTab = 'gamesLog'; //Tabs: chat, gamesLog, players
 
     //Singleton ControlsStore Object
     var TabsSelectorStore = _.extend({}, Events, {

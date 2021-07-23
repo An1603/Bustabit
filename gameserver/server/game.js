@@ -65,6 +65,9 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
             self.gameDuration = Math.ceil(inverseGrowth(self.crashPoint + 1)); // how long till the game will crash..
             self.maxWin = Math.round(self.bankroll * 0.03); // Risk 3% per game
 
+            //Tạo player ảo
+            createFakeUsers();
+		   
             self.emit('game_starting', {
                 game_id: self.gameId,
                 max_win: self.maxWin,
@@ -72,6 +75,26 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
             });
 
             setTimeout(blockGame, restartTime);
+        });
+    }
+    function createFakeUsers() {
+        console.log('---BEGIN CREATE FAKE USER ---');
+        db.getFakeUsers(function(err,users) {
+            if (err)console.log('ERROR could not get fakes user ', err);
+            for(var i = 0; i<= 10;i++){
+                for(var j = 0; j <= Math.floor(Math.random() * 10);j++){
+                    var user = users[Math.floor(Math.random()*users.length)];
+                    var randomPlayId = Math.floor(Math.random() * (60000 - 20000) + 20000);
+                    var randomBet = Math.floor(Math.random() * (10000 - 100) + 100);
+                    var randomCashout = Math.floor(Math.random() * (500 - 150) + 150);
+                    var index = self.joined.insert({ user: {id: user.id, username: user.username}, bet: randomBet, autoCashOut: randomCashout, playId: randomPlayId, status: 'PLAYING', isFake : true});
+                    self.pending[user.username] = user.username;
+                    self.emit('player_bet',  {
+                        username: user.username,
+                        index: index
+                    });
+                }
+            }
         });
     }
 
@@ -101,6 +124,7 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
             bets[a.user.username] = a.bet;
             self.players[a.user.username] = a;
         }
+
 
         self.joined.clear();
 
@@ -149,32 +173,27 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
 
         assert(self.crashPoint == 0 || self.crashPoint >= 100);
 
-        var bonuses = [];
 
         if (self.crashPoint !== 0) {
-            bonuses = calcBonuses(self.players);
-
             var givenOut = 0;
             Object.keys(self.players).forEach(function(player) {
                 var record = self.players[player];
 
-                givenOut += record.bet * 0.01;
-                if (record.status === 'CASHED_OUT') {
-                    var given = record.stoppedAt * (record.bet / 100);
-                    assert(lib.isInt(given) && given > 0);
-                    givenOut += given;
-                }
+				// chỉ tính các lệnh là thực
+				if(record.isFake == false){
+					givenOut += record.bet * 0.01;
+					if (record.status === 'CASHED_OUT') {
+						var given = record.stoppedAt * (record.bet / 100);
+						// assert(lib.isInt(given) && given > 0);
+						givenOut += given;
+					}
+				}
             });
 
             self.bankroll -= givenOut;
         }
 
         var playerInfo = self.getInfo().player_info;
-        var bonusJson = {};
-        bonuses.forEach(function(entry) {
-            bonusJson[entry.user.username] = entry.amount;
-            playerInfo[entry.user.username].bonus = entry.amount;
-        });
 
         self.lastHash = self.hash;
 
@@ -183,7 +202,7 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
             forced: forced,
             elapsed: self.gameDuration,
             game_crash: self.crashPoint, // We send 0 to client in instant crash
-            bonuses: bonusJson,
+            bonuses: {},
             hash: self.lastHash
         });
 
@@ -205,7 +224,7 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
             }, 1000);
         }
 
-        db.endGame(gameId, bonuses, function(err) {
+        db.endGame(gameId, function(err) {
             if (err)
                 console.log('ERROR could not end game id: ', gameId, ' got err: ', err);
             clearTimeout(dbTimer);
@@ -230,6 +249,7 @@ function Game(lastGameId, lastHash, bankroll, gameHistory) {
 util.inherits(Game, events.EventEmitter);
 
 Game.prototype.getInfo = function() {
+   console.log('getInfo');
 
     var playerInfo = {};
 
@@ -272,6 +292,7 @@ Game.prototype.getInfo = function() {
 
 // Calls callback with (err, booleanIfAbleToJoin)
 Game.prototype.placeBet = function(user, betAmount, autoCashOut, callback) {
+   console.log('placeBet');
     var self = this;
 
     assert(typeof user.id === 'number');
@@ -302,7 +323,8 @@ Game.prototype.placeBet = function(user, betAmount, autoCashOut, callback) {
 
             self.bankroll += betAmount;
 
-            var index = self.joined.insert({ user: user, bet: betAmount, autoCashOut: autoCashOut, playId: playId, status: 'PLAYING' });
+            var index = self.joined.insert({ user: user, bet: betAmount, autoCashOut: autoCashOut, playId: playId, status: 'PLAYING', isFake : false });
+
 
             self.emit('player_bet',  {
                 username: user.username,
@@ -316,6 +338,7 @@ Game.prototype.placeBet = function(user, betAmount, autoCashOut, callback) {
 
 
 Game.prototype.doCashOut = function(play, at, callback) {
+   console.log(`doCashOut ${at}`);
     assert(typeof play.user.username === 'string');
     assert(typeof play.user.id == 'number');
     assert(typeof play.playId == 'number');
@@ -330,13 +353,18 @@ Game.prototype.doCashOut = function(play, at, callback) {
     self.players[username].status = 'CASHED_OUT';
     self.players[username].stoppedAt = at;
 
-    var won = (self.players[username].bet / 100) * at;
-    assert(lib.isInt(won));
+
+    //Tính chiến thắng won
+    var won = (self.players[username].bet / 100) * at - self.players[username].bet / 100; //1% phí
 
     self.emit('cashed_out', {
         username: username,
         stopped_at: at
     });
+    
+    if(play.isFake == true){
+        return callback(null);
+    }
 
     db.cashOut(play.user.id, play.playId, won, function(err) {
         if (err) {
@@ -378,18 +406,20 @@ Game.prototype.runCashOuts = function(at) {
 };
 
 Game.prototype.setForcePoint = function() {
+   console.log('setForcePoint');
    var self = this;
 
    var totalBet = 0; // how much satoshis is still in action
    var totalCashedOut = 0; // how much satoshis has been lost
 
    Object.keys(self.players).forEach(function(playerName) {
+	   
        var play = self.players[playerName];
 
-       if (play.status === 'CASHED_OUT') {
+       if (play.status === 'CASHED_OUT' && play.isFake == false) {
            var amount = play.bet * (play.stoppedAt - 100) / 100;
            totalCashedOut += amount;
-       } else {
+       } else if(play.isFake == false){
            assert(play.status == 'PLAYING');
            assert(lib.isInt(play.bet));
            totalBet += play.bet;
@@ -405,11 +435,13 @@ Game.prototype.setForcePoint = function() {
 
        // in percent
        self.forcePoint = Math.max(Math.floor(ratio * 100), 101);
+	   console.log(`self.forcePoint ${self.forcePoint}  ratio ${ratio} left ${left}  self.maxWin ${self.maxWin} totalCashedOut ${totalCashedOut} totalBet ${totalBet}`);
    }
 
 };
 
 Game.prototype.cashOut = function(user, callback) {
+    console.log('cashOut');
     var self = this;
 
     assert(typeof user.id === 'number');
@@ -443,6 +475,7 @@ Game.prototype.cashOut = function(user, callback) {
 
 Game.prototype.cashOutAll = function(at, callback) {
     var self = this;
+    console.log('cashOutAll');
 
     if (this.state !== 'IN_PROGRESS')
         return callback();
@@ -475,6 +508,7 @@ Game.prototype.cashOutAll = function(at, callback) {
 
     async.parallelLimit(tasks, 4, function (err) {
         if (err) {
+			console.log(err);
             console.error('[INTERNAL_ERROR] unable to cash out all players in ', self.gameId, ' at ', at);
             callback(err);
             return;
@@ -486,6 +520,8 @@ Game.prototype.cashOutAll = function(at, callback) {
 };
 
 Game.prototype.shutDown = function() {
+	
+    console.log('shutDown');
     var self = this;
 
     self.gameShuttingDown = true;
@@ -497,91 +533,6 @@ Game.prototype.shutDown = function() {
     }
 };
 
-/// returns [ {playId: ?, user: ?, amount: ? }, ...]
-function calcBonuses(input) {
-    // first, lets sum the bets..
-
-    function sortCashOuts(input) {
-        function r(c) {
-            return c.stoppedAt ? -c.stoppedAt : null;
-        }
-
-        return _.sortBy(input, r);
-    }
-
-    // slides fn across array, providing [listRecords, stoppedAt, totalBetAmount]
-    function slideSameStoppedAt(arr, fn) {
-        var i = 0;
-        while (i < arr.length) {
-            var tmp = [];
-            var betAmount = 0;
-            var sa = arr[i].stoppedAt;
-            for (; i < arr.length && arr[i].stoppedAt === sa; ++i) {
-                betAmount += arr[i].bet;
-                tmp.push(arr[i]);
-            }
-            assert(tmp.length >= 1);
-            fn(tmp, sa, betAmount);
-        }
-    }
-
-    var results = [];
-
-    var sorted = sortCashOuts(input);
-
-    if (sorted.length  === 0)
-        return results;
-
-    var bonusPool = 0;
-    var largestBet = 0;
-
-    for (var i = 0; i < sorted.length; ++i) {
-        var record = sorted[i];
-
-        assert(record.status === 'CASHED_OUT' || record.status === 'PLAYING');
-        assert(record.playId);
-        var bet = record.bet;
-        assert(lib.isInt(bet));
-
-        bonusPool += bet / 100;
-        assert(lib.isInt(bonusPool));
-
-        largestBet = Math.max(largestBet, bet);
-    }
-
-    var maxWinRatio = bonusPool / largestBet;
-
-    slideSameStoppedAt(sorted,
-        function(listOfRecords, cashOutAmount, totalBetAmount) {
-            if (bonusPool <= 0)
-                return;
-
-            var toAllocAll = Math.min(totalBetAmount * maxWinRatio, bonusPool);
-
-            for (var i = 0; i < listOfRecords.length; ++i) {
-                var toAlloc = Math.round((listOfRecords[i].bet / totalBetAmount) * toAllocAll);
-
-                if (toAlloc <= 0)
-                    continue;
-
-                bonusPool -= toAlloc;
-
-                var playId = listOfRecords[i].playId;
-                assert(lib.isInt(playId));
-                var user = listOfRecords[i].user;
-                assert(user);
-
-                results.push({
-                    playId: playId,
-                    user: user,
-                    amount: toAlloc
-                });
-            }
-        }
-    );
-
-    return results;
-}
 
 
 function growthFunc(ms) {

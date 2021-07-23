@@ -1,0 +1,29 @@
+{{##def.page_title = 'Deposit History' #}}
+{{##def.content:
+    <a class="btn btn-primary" href="/admin/giveaway">Nạp tay</a>
+    {{?it.deposits.length > 0}}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <td>User</td>
+                    <td>Bnbs</td>
+                    <td>Transaction</td>
+                    <td class="show-for-medium-up">Created</td>
+                </tr>
+            </thead>
+            <tbody>
+                {{~it.deposits :deposit:index}}
+                    <tr>
+                        <td>{{=deposit.username}}</td>
+                        <td>{{#def.format: {n: deposit.amount, decimals: 2 } }}</td>
+                        <td><a href="https://bscscan.com/tx/{{=deposit.txid}}" target="_blank">{{=deposit.txid}}</a></td>
+                        <td class="show-for-medium-up">{{=deposit.created}}</td>
+                    </tr>
+                {{~}}
+            </tbody>
+        </table>
+    {{??}}
+        <p>Don't have deposits</p>
+    {{?}}
+#}}
+{{#def.include('../template/public')}}

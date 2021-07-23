@@ -24,11 +24,10 @@ function CustomChart(startingFrom, cum, chartData) {
             var r = "<table>" +
                 "<tr><th>Game Id:</th><td>" + entry.game_id + "<br><small>(" + entry.timeago + ")</small>" +
                 "</td></tr>" +
-                '<tr><th>Bet:</th><td>' + (entry.bet/100).toFixed() + ' bits</td></tr>' +
+                '<tr><th>Bet:</th><td>' + (entry.bet/1).toFixed() + ' bnbs</td></tr>' +
                 "<tr><th>Crash At:</th><td>" + (typeof entry.game_crash !== 'undefined' ? (entry.game_crash/100).toFixed(2) + 'x' : '?') + "</td></tr>" +
-                "<tr><th>Cashed Out:</th><td>" + (entry.cash_out ? (entry.cash_out / entry.bet).toFixed(2) + 'x' : '-') + "</td></tr>" +
-                '<tr><th>Bonus: </th><td>' + (entry.bonus ? (entry.bonus/100).toFixed(2) : 0) + ' bits</td></tr>' +
-                "<tr><th>Profit:</th><td><b>" + (profit/100).toFixed(2) + " bits</b></td></tr>" +
+                "<tr><th>Cashed Out:</th><td>" + (entry.cash_out ? ((entry.cash_out/1+entry.bet*0.01) / entry.bet).toFixed(2) + 'x' : '-') + "</td></tr>" +
+                "<tr><th>Profit:</th><td><b>" + (profit/1).toFixed(2) + " bnbs</b></td></tr>" +
                 '</table>';
             return r;
 

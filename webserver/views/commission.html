@@ -1,0 +1,112 @@
+{{##def.page_title = 'Commissions' #}}
+{{##def.content:
+
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3">
+                <h4>Deposit commissions</h4>
+                <p> When remain > 500,000 bnbs you will get:</p>
+                <table class="table table-bordered table-sm">
+                    <tbody>
+                        <tr>
+                        <td>F</td>
+                        <td>Commissions</td>
+                        </tr>
+                        <tr>
+                        <td>1</td>
+                        <td>1%<br></td>
+                        </tr>
+                        <tr>
+                        <td>2</td>
+                        <td>0.5%<br></td>
+                        </tr>
+                        <tr>
+                        <td>3</td>
+                        <td>0.25%<br></td>
+                        </tr>
+                        <tr>
+                        <td>4</td>
+                        <td>0.125%<br></td>
+                        </tr>
+                        <tr>
+                        <td>5</td>
+                        <td>0.0625%<br></td>
+                        </tr>
+                        <tr>
+                        <td>6</td>
+                        <td>0.03125%<br></td>
+                        </tr>
+                        <tr>
+                        <td>7</td>
+                        <td>0.016525%<br></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-lg-3">
+                <h4>Bet commissions</h4>
+                <p> When remain > 500,000 bnbs you will get:</p>
+                <table class="table table-bordered  table-sm">
+                    <tbody>
+                        <tr>
+                        <td>F</td>
+                        <td>Commissions</td>
+                        </tr>
+                        <tr>
+                        <td>1</td>
+                        <td>0.16%<br></td>
+                        </tr>
+                        <tr>
+                        <td>2</td>
+                        <td>0.13%<br></td>
+                        </tr>
+                        <tr>
+                        <td>3</td>
+                        <td>0.1%<br></td>
+                        </tr>
+                        <tr>
+                        <td>4</td>
+                        <td>0.07%<br></td>
+                        </tr>
+                        <tr>
+                        <td>5</td>
+                        <td>0.04%<br></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-lg-6">
+                {{?it.user.commissions.length > 0}}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <td>Bnbs</td>
+                            <td>Description</td>
+                            <td class="show-for-large-up">Created</td>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{~it.user.commissions :commission:index}}
+                        <tr>
+                            <td>{{#def.format: {n: commission.amount, decimals: 2 } }}</td>
+                            <td>
+                                {{=commission.description}}
+                            </td>
+                            <td class="show-for-large-up">{{=commission.created}}</td>
+                        </tr>
+                        {{~}}
+                    </tbody>
+                </table>
+                {{??}}
+                <p>You have no commissions in your account.</p>
+                {{?}}
+            </div>
+        </div>
+    </div>
+    <!-- /.col-md-12 -->
+</div>
+<!-- /.content -->
+#}}
+{{#def.include('./template/public')}}
